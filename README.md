@@ -1,24 +1,24 @@
-# AURA TV
+# AURA TV v1.1
 
-Interfaccia premium per player IPTV, con UI glass, Home dinamica e struttura pronta per EPG, metadata e playlist.
+Base React/Vite con Home aggiornata:
+- area principale scrollabile verso il basso;
+- Hero più alta;
+- ultimi canali visti con 3 card e spaziature corrette;
+- canali preferiti con logo, titolo, canale, orario e progress bar;
+- nuova sezione “Continua a guardare” con 2 film e 2 serie;
+- film e serie in formato locandina verticale, pronti per immagini TMDB.
 
-## Avvio in Codespaces
+## Avvio
 
 ```bash
 npm install
 npm run dev
 ```
 
-Apri la porta mostrata da Vite nella scheda **Ports**.
-
-## Regole Git
-
-Non caricare mai `node_modules` o `dist`.
-
-Dopo ogni modifica funzionante:
+## Salvataggio
 
 ```bash
 git add .
-git commit -m "Descrizione modifica"
+git commit -m "Aggiorna AURA v1.1"
 git push
 ```

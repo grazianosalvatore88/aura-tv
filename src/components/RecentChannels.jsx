@@ -6,7 +6,7 @@ export default function RecentChannels({ channels, selectedId, onSelect }) {
     <aside className="recent-panel glass-panel">
       <h3>Ultimi canali visti</h3>
       <div className="recent-list">
-        {channels.slice(0, 3).map((item) => (
+        {channels.map((item) => (
           <button
             key={item.id}
             className={`recent-card ${selectedId === item.id ? 'active' : ''}`}

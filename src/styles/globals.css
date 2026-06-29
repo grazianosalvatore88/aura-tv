@@ -5820,3 +5820,249 @@ button { font: inherit; }
     width: 100%;
   }
 }
+
+
+/* v3.0.5 M3U locale */
+.settings-textarea-field {
+  grid-column: 1 / -1;
+}
+
+.settings-textarea-field textarea {
+  min-height: 220px;
+  resize: vertical;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  padding: 14px 16px;
+  color: white;
+  background: rgba(255,255,255,.06);
+  outline: none;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.settings-textarea-field textarea:focus {
+  border-color: rgba(152, 93, 255, .55);
+  box-shadow: 0 0 0 4px rgba(152, 93, 255, .12);
+}
+
+.file-import-field input {
+  padding: 12px;
+  cursor: pointer;
+}
+
+
+/* v3.0.6 M3U active source */
+.inline-actions {
+  grid-column: 1 / -1;
+  margin-top: -6px;
+}
+
+
+/* v3.0.7 full source engine */
+.home-source-strip {
+  min-height: 82px;
+  border-radius: 26px;
+  padding: 18px 20px;
+  margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid rgba(255,255,255,.14);
+  background:
+    linear-gradient(135deg, rgba(87, 96, 255, .18), rgba(255, 45, 152, .10)),
+    rgba(255,255,255,.06);
+}
+
+.home-source-strip strong,
+.home-source-strip small {
+  display: block;
+}
+
+.home-source-strip strong {
+  margin-top: 4px;
+  font-size: 18px;
+}
+
+.home-source-strip small {
+  color: rgba(255,255,255,.68);
+  margin-top: 5px;
+  font-weight: 850;
+}
+
+.home-source-strip button {
+  height: 44px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  color: white;
+  padding: 0 16px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.source-name-short {
+  grid-column: span 1;
+}
+
+.source-link-long {
+  grid-column: span 1;
+}
+
+.settings-form-grid.source-form-spaced .source-link-long input {
+  font-size: 13px;
+}
+
+@media (min-width: 1120px) {
+  .settings-form-grid.source-form-spaced {
+    grid-template-columns: minmax(180px, .7fr) minmax(340px, 1.3fr);
+  }
+
+  .settings-form-grid.source-form-spaced.single {
+    grid-template-columns: minmax(180px, .7fr) minmax(340px, 1.3fr);
+  }
+
+  .settings-textarea-field,
+  .file-import-field,
+  .inline-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 880px) {
+  .home-source-strip {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .home-source-strip button {
+    width: 100%;
+  }
+}
+
+
+/* v3.0.8 clean real-list integration */
+.home-source-strip,
+.aura-engine-status {
+  display: none !important;
+}
+
+.clean-hero-meta .live-badge,
+.hero-meta .live-badge {
+  display: none !important;
+}
+
+.hero-channel-image,
+.recent-channel-image,
+.channel-card-image {
+  object-fit: contain;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+.hero-channel-image {
+  width: 78px;
+  height: 78px;
+  border-radius: 24px;
+  padding: 10px;
+}
+
+.recent-channel-image {
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
+  padding: 7px;
+}
+
+.channel-card-image {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  padding: 7px;
+}
+
+.hero::before {
+  opacity: .72;
+}
+
+
+/* v3.0.9 EPG + fullscreen player behavior */
+.aura-player.hub-hidden {
+  cursor: none;
+}
+
+.aura-player.hub-hidden .player-vignette,
+.aura-player.hub-hidden .player-back-button,
+.aura-player.hub-hidden .player-top-title,
+.aura-player.hub-hidden .player-top-actions,
+.aura-player.hub-hidden .player-floating-panel,
+.aura-player.hub-hidden .player-glass-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+}
+
+.aura-player.hub-visible .player-vignette,
+.aura-player.hub-visible .player-back-button,
+.aura-player.hub-visible .player-top-title,
+.aura-player.hub-visible .player-top-actions,
+.aura-player.hub-visible .player-floating-panel,
+.aura-player.hub-visible .player-glass-panel {
+  transition: opacity .28s ease, transform .28s ease;
+}
+
+.player-back-button {
+  position: fixed;
+  z-index: 9;
+  top: 24px;
+  left: 28px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(6,10,26,.42);
+  color: white;
+  padding: 0 16px;
+  font-weight: 950;
+  backdrop-filter: blur(18px);
+  cursor: pointer;
+}
+
+.player-channel-image {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  padding: 7px;
+  object-fit: contain;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+.settings-field.source-link-long {
+  grid-column: 1 / -1;
+}
+
+.settings-field.source-link-long input {
+  font-size: 13px;
+}
+
+.settings-actions.inline-actions {
+  grid-column: 1 / -1;
+}
+
+.aura-guide-placeholder {
+  display: none;
+}
+
+
+/* v3.1.1 Smart EPG */
+.settings-card .settings-actions.inline-actions button {
+  min-width: 140px;
+}
+
+.player-channel-image,
+.hero-channel-image,
+.recent-channel-image,
+.channel-card-image,
+.channel-logo-image {
+  object-fit: contain;
+}

@@ -3,6 +3,8 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { getXtreamConfig, testXtreamConnection, testXtreamM3u, xtreamM3uRequest, xtreamRequest } from '../services/xtreamService.js';
+import { countM3uItems, fetchM3uFromUrl, isValidM3uText } from '../services/m3uService.js';
+import { buildEpgReportFromM3u, extractEpgUrlFromM3u, extractM3uEpgKeys, fetchEpgFromUrl, loadEpgCache, loadEpgReport, parseXmlTv, saveEpgCache, saveEpgReport } from '../services/epgService.js';
 
 const settingsTabs = [
   'Sorgente TV',
@@ -23,7 +25,11 @@ const defaultSettings = {
     clientMode: 'Auto'
   },
   m3u: {
-    playlistUrl: ''
+    playlistUrl: '',
+    localName: '',
+    localText: '',
+    epgUrl: '',
+    epgStatus: 'Non caricato'
   },
   stalker: {
     portalUrl: '',
@@ -90,6 +96,7 @@ function safeLoadSettings() {
 
 function saveSettings(nextSettings) {
   localStorage.setItem('aura-tv-settings', JSON.stringify(nextSettings));
+  window.dispatchEvent(new CustomEvent('aura-settings-updated'));
 }
 
 function SettingCard({ eyebrow, title, description, children }) {
@@ -105,15 +112,47 @@ function SettingCard({ eyebrow, title, description, children }) {
   );
 }
 
-function Field({ label, value, type = 'text', placeholder, onChange }) {
+function Field({ label, value, type = 'text', placeholder, onChange, className = '' }) {
   return (
-    <label className="settings-field">
+    <label className={`settings-field ${className}`.trim()}>
       <span>{label}</span>
       <input
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function TextAreaField({ label, value, placeholder, onChange }) {
+  return (
+    <label className="settings-field settings-textarea-field">
+      <span>{label}</span>
+      <textarea
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        rows={10}
+      />
+    </label>
+  );
+}
+
+function FileImportField({ label, onLoad }) {
+  return (
+    <label className="settings-field file-import-field">
+      <span>{label}</span>
+      <input
+        type="file"
+        accept=".m3u,.m3u8,.txt"
+        onChange={async (event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          const text = await file.text();
+          onLoad(text, file.name);
+        }}
       />
     </label>
   );
@@ -183,7 +222,11 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }
 
     if (settings.sourceType === 'M3U') {
-      return Boolean(settings.m3u.playlistUrl);
+      return Boolean(settings.m3u.playlistUrl || isValidM3uText(settings.m3u.localText));
+    }
+
+    if (settings.sourceType === 'M3U locale') {
+      return Boolean(isValidM3uText(settings.m3u.localText));
     }
 
     return Boolean(settings.stalker.portalUrl && settings.stalker.macAddress);
@@ -212,6 +255,40 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }), true);
   }
 
+  async function importM3uUrl() {
+    if (!settings.m3u.playlistUrl) {
+      setNotice({ status: 'error', message: 'Inserisci prima un URL M3U.' });
+      return;
+    }
+
+    try {
+      setNotice({ status: 'ok', message: 'Lettura URL M3U in corso...' });
+      const m3uText = await fetchM3uFromUrl(settings.m3u.playlistUrl);
+      const total = countM3uItems(m3uText);
+
+      updateSettings((current) => ({
+        ...current,
+        sourceType: 'M3U',
+        m3u: {
+          ...current.m3u,
+          localText: m3uText,
+          localName: current.m3u.localName || 'Lista M3U URL',
+          epgUrl: current.m3u.epgUrl || extractEpgUrlFromM3u(m3uText)
+        },
+        connectionStatus: total > 0 ? 'M3U importata' : 'M3U non valida'
+      }), true);
+
+      setNotice({
+        status: total > 0 ? 'ok' : 'error',
+        message: total > 0
+          ? `M3U importata: ${total} elementi trovati.`
+          : 'La lista M3U non contiene elementi validi.'
+      });
+    } catch (error) {
+      setNotice({ status: 'error', message: error.message || 'Errore import M3U.' });
+    }
+  }
+
   async function testConnection() {
     if (!sourceReady) {
       setNotice({ status: 'error', message: 'Completa i campi della sorgente prima di testare la connessione.' });
@@ -222,12 +299,32 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
       return;
     }
 
+    if (settings.sourceType === 'M3U locale' || settings.sourceType === 'M3U') {
+      if (settings.sourceType === 'M3U' && settings.m3u.playlistUrl && !isValidM3uText(settings.m3u.localText)) {
+        await importM3uUrl();
+        return;
+      }
+
+      const total = countM3uItems(settings.m3u.localText || '');
+      updateSettings((current) => ({
+        ...current,
+        connectionStatus: total > 0 ? 'Lista M3U valida' : 'Lista M3U non valida'
+      }), true);
+      setNotice({
+        status: total > 0 ? 'ok' : 'error',
+        message: total > 0
+          ? `Lista M3U valida: ${total} canali trovati.`
+          : 'La lista M3U non contiene canali validi.'
+      });
+      return;
+    }
+
     if (settings.sourceType !== 'Xtream' && settings.sourceType !== 'Lista con link') {
       updateSettings((current) => ({
         ...current,
         connectionStatus: 'Formato salvato'
       }), true);
-      setNotice({ status: 'ok', message: 'Per ora il collegamento reale è attivo su Xtream. M3U e Stalker saranno collegati dopo.' });
+      setNotice({ status: 'ok', message: 'Questa sorgente è salvata. Il collegamento reale sarà completato in una fase successiva.' });
       return;
     }
 
@@ -272,6 +369,75 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }
   }
 
+  async function importEpgUrl() {
+    const autoUrl = extractEpgUrlFromM3u(settings.m3u.localText || '');
+    const epgUrl = String(settings.m3u.epgUrl || autoUrl || '').trim();
+
+    if (!epgUrl) {
+      setNotice({ status: 'error', message: 'Inserisci un URL EPG oppure usa una M3U con x-tvg-url.' });
+      return;
+    }
+
+    try {
+      setNotice({ status: 'ok', message: 'Analisi EPG in corso...' });
+      const xmlText = await fetchEpgFromUrl(epgUrl);
+      const wantedKeys = extractM3uEpgKeys(settings.m3u.localText || '');
+      const epg = parseXmlTv(xmlText, wantedKeys);
+      const report = buildEpgReportFromM3u(settings.m3u.localText || '', epg);
+      const saved = saveEpgCache(epg);
+      saveEpgReport(report);
+
+      updateSettings((current) => ({
+        ...current,
+        m3u: {
+          ...current.m3u,
+          epgUrl,
+          epgStatus: saved
+            ? `${report.matchedChannels}/${report.m3uChannels} canali · ${report.savedProgrammes} programmi`
+            : 'EPG troppo grande'
+        }
+      }), true);
+
+      if (saved) window.dispatchEvent(new CustomEvent('aura-epg-updated'));
+
+      setNotice({
+        status: saved ? 'ok' : 'error',
+        message: saved
+          ? `EPG pronta: ${report.matchedChannels}/${report.m3uChannels} canali abbinati, ${report.savedProgrammes} programmi salvati.`
+          : 'EPG letta ma troppo grande da salvare.'
+      });
+    } catch (error) {
+      updateSettings((current) => ({
+        ...current,
+        m3u: {
+          ...current.m3u,
+          epgStatus: 'Errore EPG'
+        }
+      }), true);
+      setNotice({ status: 'error', message: error.message || 'Errore import EPG.' });
+    }
+  }
+
+  function loadCachedEpgStatus() {
+    const epg = loadEpgCache();
+    const report = loadEpgReport();
+
+    if (!epg?.count) {
+      setNotice({ status: 'error', message: 'Nessuna EPG salvata.' });
+      return;
+    }
+
+    if (report) {
+      setNotice({
+        status: 'ok',
+        message: `EPG salvata: ${report.matchedChannels}/${report.m3uChannels} canali, ${report.savedProgrammes} programmi. Mancanti: ${report.missingChannels}.`
+      });
+      return;
+    }
+
+    setNotice({ status: 'ok', message: `EPG salvata: ${epg.count} programmi su ${epg.channelCount || 0} canali.` });
+  }
+
   function saveSource() {
     if (!sourceReady) {
       setNotice({ status: 'error', message: 'Completa i campi richiesti prima di salvare la sorgente.' });
@@ -300,13 +466,43 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
       return;
     }
 
+    if (settings.sourceType === 'M3U locale' || settings.sourceType === 'M3U') {
+      if (settings.sourceType === 'M3U' && settings.m3u.playlistUrl && !isValidM3uText(settings.m3u.localText)) {
+        await importM3uUrl();
+        return;
+      }
+
+      const total = countM3uItems(settings.m3u.localText || '');
+      const timestamp = new Date().toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      updateSettings((current) => ({
+        ...current,
+        connectionStatus: total > 0 ? 'Lista locale aggiornata' : 'Lista locale non valida',
+        lastUpdate: timestamp
+      }), true);
+
+      setNotice({
+        status: total > 0 ? 'ok' : 'error',
+        message: total > 0
+          ? `Lista locale pronta: ${total} canali disponibili in Live TV.`
+          : 'Lista locale non valida.'
+      });
+      return;
+    }
+
     if (settings.sourceType !== 'Xtream' && settings.sourceType !== 'Lista con link') {
-      setNotice({ status: 'error', message: 'Per ora l’aggiornamento reale della lista è attivo su Xtream.' });
+      setNotice({ status: 'error', message: 'Questa sorgente non ha ancora aggiornamento reale.' });
       return;
     }
 
     try {
-      setNotice({ status: 'ok', message: 'Lettura canali Xtream in corso...' });
+      setNotice({ status: 'ok', message: 'Lettura canali in corso...' });
       const streams = await xtreamRequest('get_live_streams', {}, getXtreamConfig(settings));
       const total = Array.isArray(streams) ? streams.length : 0;
 
@@ -327,7 +523,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
       setNotice({ status: 'ok', message: `Lista Live TV letta correttamente: ${total} canali trovati.` });
     } catch (error) {
       try {
-        setNotice({ status: 'ok', message: 'API canali non disponibile. Provo lista M3U...' });
+        setNotice({ status: 'ok', message: 'Metodo canali non disponibile. Provo lista M3U...' });
         const m3uText = await xtreamM3uRequest('mpegts', getXtreamConfig(settings));
         const total = String(m3uText || '').split('#EXTINF').length - 1;
 
@@ -456,7 +652,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                   description="Inserisci la sorgente che AURA userà per caricare canali, film, serie e sport."
                 >
                   <div className="source-type-grid">
-                    {['Lista con link', 'Xtream', 'M3U', 'Stalker'].map((source) => (
+                    {['M3U', 'Lista con link', 'Xtream', 'Stalker'].map((source) => (
                       <button
                         key={source}
                         type="button"
@@ -474,7 +670,8 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                         <Field
                           label="Nome lista"
                           value={settings.xtream.listName || ''}
-                          placeholder="Es. Lista principale"
+                          placeholder="Es. Lista"
+                          className="source-name-short"
                           onChange={(value) => updateSourceField('xtream', 'listName', value)}
                         />
                       ) : null}
@@ -482,6 +679,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                         label={settings.sourceType === 'Lista con link' ? 'Link' : 'URL server'}
                         value={settings.xtream.linkUrl || settings.xtream.serverUrl}
                         placeholder="https://server.example.com"
+                        className="source-link-long"
                         onChange={(value) => {
                           updateSourceField('xtream', 'linkUrl', value);
                           updateSourceField('xtream', 'serverUrl', value);
@@ -514,13 +712,88 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                     </div>
                   ) : null}
 
+                  {settings.sourceType === 'M3U locale' ? (
+                    <div className="settings-form-grid source-form-spaced single">
+                      <Field
+                        label="Nome lista"
+                        value={settings.m3u.localName || ''}
+                        placeholder="Es. Canali test"
+                        onChange={(value) => updateSourceField('m3u', 'localName', value)}
+                      />
+                      <FileImportField
+                        label="Carica file M3U"
+                        onLoad={(fileText, fileName) => {
+                          updateSourceField('m3u', 'localText', fileText);
+                          updateSourceField('m3u', 'localName', settings.m3u.localName || fileName);
+                          const autoEpg = extractEpgUrlFromM3u(fileText);
+                          if (autoEpg) updateSourceField('m3u', 'epgUrl', autoEpg);
+                          setNotice({ status: 'ok', message: `File caricato: ${fileName}` });
+                        }}
+                      />
+                      <TextAreaField
+                        label="Incolla lista M3U"
+                        value={settings.m3u.localText || ''}
+                        placeholder="#EXTM3U\n#EXTINF:-1,Nome canale\nhttps://..."
+                        onChange={(value) => updateSourceField('m3u', 'localText', value)}
+                      />
+                      <Field
+                        label="Stato connessione"
+                        value={settings.connectionStatus}
+                        onChange={() => {}}
+                      />
+                    </div>
+                  ) : null}
+
                   {settings.sourceType === 'M3U' ? (
                     <div className="settings-form-grid source-form-spaced single">
                       <Field
-                        label="URL lista M3U"
+                        label="Nome lista"
+                        value={settings.m3u.localName || ''}
+                        placeholder="Es. Lista"
+                        className="source-name-short"
+                        onChange={(value) => updateSourceField('m3u', 'localName', value)}
+                      />
+                      <Field
+                        label="Link lista M3U"
                         value={settings.m3u.playlistUrl}
                         placeholder="https://server.example.com/lista.m3u"
+                        className="source-link-long"
                         onChange={(value) => updateSourceField('m3u', 'playlistUrl', value)}
+                      />
+                      <div className="settings-actions inline-actions">
+                        <button type="button" className="secondary" onClick={importM3uUrl}>Importa URL M3U</button>
+                      </div>
+                      <FileImportField
+                        label="Carica file M3U"
+                        onLoad={(fileText, fileName) => {
+                          updateSourceField('m3u', 'localText', fileText);
+                          updateSourceField('m3u', 'localName', settings.m3u.localName || fileName);
+                          const autoEpg = extractEpgUrlFromM3u(fileText);
+                          if (autoEpg) updateSourceField('m3u', 'epgUrl', autoEpg);
+                          setNotice({ status: 'ok', message: `File caricato: ${fileName}` });
+                        }}
+                      />
+                      <TextAreaField
+                        label="Oppure incolla lista M3U"
+                        value={settings.m3u.localText || ''}
+                        placeholder="#EXTM3U\n#EXTINF:-1,Nome canale\nhttps://..."
+                        onChange={(value) => updateSourceField('m3u', 'localText', value)}
+                      />
+                      <Field
+                        label="URL EPG"
+                        value={settings.m3u.epgUrl || ''}
+                        placeholder="https://server.example.com/epg.xml"
+                        className="source-link-long"
+                        onChange={(value) => updateSourceField('m3u', 'epgUrl', value)}
+                      />
+                      <div className="settings-actions inline-actions">
+                        <button type="button" className="secondary" onClick={importEpgUrl}>Analizza EPG</button>
+                        <button type="button" className="secondary" onClick={loadCachedEpgStatus}>Riepilogo EPG</button>
+                      </div>
+                      <Field
+                        label="Stato EPG"
+                        value={settings.m3u.epgStatus || 'Non caricato'}
+                        onChange={() => {}}
                       />
                       <Field
                         label="Stato connessione"

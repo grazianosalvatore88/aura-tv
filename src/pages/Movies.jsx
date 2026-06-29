@@ -6,24 +6,29 @@ import MediaDetail from '../components/MediaDetail.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { movieFilters, movies } from '../data/movies.js';
+import useAuraLibrary from '../services/useAuraLibrary.js';
 
 const initialFavoriteIds = movies.filter((movie) => movie.favorite).map((movie) => movie.id);
 
 export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
+  const library = useAuraLibrary();
+  const sourceMovies = library.movies.length ? library.movies : movies;
+  const filters = library.movies.length ? ['Tutti', ...Array.from(new Set(sourceMovies.flatMap((movie) => movie.genres || []))), '4K'] : movieFilters;
+
   const [activeFilter, setActiveFilter] = useState('Tutti');
   const [selectedMovie, setSelectedMovie] = useState(movies[0]);
   const [detailMovie, setDetailMovie] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuality, setSelectedQuality] = useState(() => Object.fromEntries(
-    movies.map((movie) => [movie.id, movie.quality])
+    sourceMovies.map((movie) => [movie.id, movie.quality])
   ));
 
-  const enrichedMovies = useMemo(() => movies.map((movie) => ({
+  const enrichedMovies = useMemo(() => sourceMovies.map((movie) => ({
     ...movie,
     favorite: favoriteIds.has(movie.id),
     selectedQuality: selectedQuality[movie.id] || movie.quality
-  })), [favoriteIds, selectedQuality]);
+  })), [favoriteIds, selectedQuality, sourceMovies]);
 
   const filteredMovies = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -97,7 +102,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
 
   function cycleQuality(movieId) {
     setSelectedQuality((current) => {
-      const movie = movies.find((item) => item.id === movieId);
+      const movie = sourceMovies.find((item) => item.id === movieId);
       if (!movie?.availableQualities?.length) return current;
       const options = movie.availableQualities;
       const currentValue = current[movieId] || movie.quality || options[0];
@@ -211,7 +216,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
         </section>
 
         <div className="movie-filter-tabs visible" role="tablist" aria-label="Filtri film">
-          {movieFilters.map((filter) => (
+          {filters.map((filter) => (
             <button
               key={filter}
               type="button"

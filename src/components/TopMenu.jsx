@@ -1,9 +1,22 @@
+import { useEffect, useState } from 'react';
+import { formatDeviceTime, getDeviceDate } from '../services/timeService.js';
+
 export default function TopMenu({
   searchValue,
   onSearchChange,
   onNavigate = () => {},
   placeholder = 'Cerca film, serie, canali, eventi sportivi...'
 }) {
+  const [clock, setClock] = useState(() => formatDeviceTime(getDeviceDate()));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setClock(formatDeviceTime(getDeviceDate()));
+    }, 1000 * 15);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const controlledProps = typeof searchValue === 'string'
     ? {
         value: searchValue,
@@ -27,7 +40,7 @@ export default function TopMenu({
       </div>
 
       <div className="top-actions">
-        <button type="button" className="clock glass-control">21:45</button>
+        <button type="button" className="clock glass-control">{clock}</button>
         <button
           type="button"
           className="settings glass-control"

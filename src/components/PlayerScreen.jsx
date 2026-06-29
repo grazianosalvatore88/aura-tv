@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ChannelLogo from './ChannelLogo.jsx';
 import ProgressBar from './ProgressBar.jsx';
 import StreamVideo from './StreamVideo.jsx';
@@ -45,26 +45,6 @@ function SettingsIcon() {
       <path d="M18.2 12h3" />
       <path d="M4.35 19.65 6.5 17.5" />
       <path d="m17.5 6.5 2.15-2.15" />
-    </svg>
-  );
-}
-
-function PipIcon() {
-  return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="14" rx="2.5" />
-      <rect x="13" y="12" width="5" height="4" rx="1" />
-    </svg>
-  );
-}
-
-function FullscreenIcon() {
-  return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M8 3H4v4" />
-      <path d="M16 3h4v4" />
-      <path d="M8 21H4v-4" />
-      <path d="M16 21h4v-4" />
     </svg>
   );
 }
@@ -120,21 +100,75 @@ export default function PlayerScreen({
   const [audioPanelOpen, setAudioPanelOpen] = useState(false);
   const [subPanelOpen, setSubPanelOpen] = useState(false);
   const [qualityPanelOpen, setQualityPanelOpen] = useState(false);
-  const [pipActive, setPipActive] = useState(false);
   const [fullscreenActive, setFullscreenActive] = useState(false);
   const [streamStatus, setStreamStatus] = useState('');
+  const [hubVisible, setHubVisible] = useState(true);
 
   const isLive = mode === 'live';
   const media = item || channel || {};
   const background = media.backdrop || media.background || '';
-  const title = media.title || media.channel || 'AURA Player';
+  const title = isLive ? (media.channel || media.title || 'AURA Player') : (media.title || 'AURA Player');
   const quality = media.selectedQuality || media.selectedResolution || media.quality || media.qualityLabel || 'Auto';
 
   const topSubtitle = useMemo(() => {
-    if (isLive) return `${media.channel || ''}${media.time ? ` · ${media.time}` : ''}`;
+    if (isLive) return `${media.title || 'In onda ora'}${media.time ? ` · ${media.time}` : ''}`;
     if (type === 'series') return `${media.currentEpisode || 'Stagione 1 · Episodio 1'}${media.selectedQuality ? ` · ${media.selectedQuality}` : ''}`;
     return `${media.year || ''}${media.duration ? ` · ${media.duration}` : ''}${media.selectedQuality ? ` · ${media.selectedQuality}` : ''}`;
   }, [isLive, media, type]);
+
+  const nextLabel = media.nextProgram || 'Programma successivo non disponibile';
+  const startLabel = media.time?.split(' - ')?.[0] || 'Ora';
+  const stopLabel = media.time?.split(' - ')?.[1] || '';
+
+  function revealHub() {
+    setHubVisible(true);
+  }
+
+  useEffect(() => {
+    revealHub();
+  }, [media.id]);
+
+  useEffect(() => {
+    if (/non disponibile|errore|premi play/i.test(streamStatus || '')) {
+      setHubVisible(true);
+      return undefined;
+    }
+
+    if (paused || settingsOpen || audioPanelOpen || subPanelOpen || qualityPanelOpen) {
+      setHubVisible(true);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setHubVisible(false), 3800);
+    return () => clearTimeout(timer);
+  }, [paused, settingsOpen, audioPanelOpen, subPanelOpen, qualityPanelOpen, media.id, hubVisible, streamStatus]);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' || event.key === 'Backspace') {
+        event.preventDefault();
+        if (!hubVisible) {
+          setHubVisible(true);
+        } else {
+          onBack();
+        }
+        return;
+      }
+
+      if (event.key === ' ' || event.key === 'Enter' || event.key === 'MediaPlayPause') {
+        event.preventDefault();
+        setPaused((value) => !value);
+        setHubVisible(true);
+      }
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        setHubVisible(true);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hubVisible, onBack]);
 
   function toggleFullscreen() {
     const root = document.documentElement;
@@ -154,10 +188,21 @@ export default function PlayerScreen({
   function cycleQuality() {
     onCycleQuality();
     setQualityPanelOpen(true);
+    revealHub();
+  }
+
+  function togglePause() {
+    setPaused((value) => !value);
+    revealHub();
   }
 
   return (
-    <div className={isLive ? 'aura-player live-player' : 'aura-player vod-player'}>
+    <div
+      className={`${isLive ? 'aura-player live-player' : 'aura-player vod-player'} ${hubVisible ? 'hub-visible' : 'hub-hidden'}`}
+      onMouseMove={revealHub}
+      onClick={revealHub}
+      onTouchStart={revealHub}
+    >
       <div className="player-video-layer" style={{ '--player-bg': `url(${background})` }}>
         <StreamVideo
           src={media.streamUrl}
@@ -165,10 +210,14 @@ export default function PlayerScreen({
           poster={media.icon || media.poster || background}
           muted={muted}
           paused={paused}
+          streamType={media.streamType}
           onStatusChange={setStreamStatus}
         />
       </div>
+
       <div className="player-vignette" />
+
+      <button type="button" className="player-back-button" onClick={onBack}>← Indietro</button>
 
       <section className="player-top-title">
         <span>{isLive ? 'Live TV' : type === 'series' ? 'Serie TV' : 'Film'}</span>
@@ -177,18 +226,23 @@ export default function PlayerScreen({
       </section>
 
       <div className="player-top-actions">
-        <PlayerButton label="Impostazioni player" active={settingsOpen} onClick={() => setSettingsOpen((value) => !value)}>
+        <PlayerButton label="Impostazioni player" active={settingsOpen} onClick={() => {
+          setSettingsOpen((value) => !value);
+          revealHub();
+        }}>
           <SettingsIcon />
         </PlayerButton>
         <PlayerButton label={muted ? 'Attiva audio' : 'Disattiva audio'} active={muted || audioPanelOpen} onClick={() => {
           setMuted((value) => !value);
           setAudioPanelOpen((value) => !value);
+          revealHub();
         }}>
           <SpeakerIcon muted={muted} />
         </PlayerButton>
         <PlayerButton label="Sottotitoli" active={subtitles || subPanelOpen} onClick={() => {
           setSubtitles((value) => !value);
           setSubPanelOpen((value) => !value);
+          revealHub();
         }}>
           <CaptionsIcon />
         </PlayerButton>
@@ -200,8 +254,8 @@ export default function PlayerScreen({
           {settingsOpen ? (
             <>
               <strong>Impostazioni player</strong>
-              <button type="button" onClick={() => setPipActive((value) => !value)}>Picture in picture: {pipActive ? 'On' : 'Off'}</button>
               <button type="button" onClick={toggleFullscreen}>Schermo intero: {fullscreenActive ? 'On' : 'Off'}</button>
+              <button type="button" onClick={() => setHubVisible(false)}>Nascondi interfaccia</button>
             </>
           ) : null}
 
@@ -209,7 +263,6 @@ export default function PlayerScreen({
             <>
               <strong>Audio</strong>
               <button type="button" onClick={() => setMuted(false)}>Italiano · Stereo</button>
-              <button type="button" onClick={() => setMuted(false)}>Italiano · 5.1</button>
               <button type="button" onClick={() => setMuted(true)}>Muto</button>
             </>
           ) : null}
@@ -219,7 +272,6 @@ export default function PlayerScreen({
               <strong>Sottotitoli</strong>
               <button type="button" onClick={() => setSubtitles(false)}>Disattivati</button>
               <button type="button" onClick={() => setSubtitles(true)}>Italiano</button>
-              <button type="button" onClick={() => setSubtitles(true)}>Italiano non udenti</button>
             </>
           ) : null}
 
@@ -238,29 +290,29 @@ export default function PlayerScreen({
       {isLive ? (
         <section className="player-glass-panel live-control-panel">
           <div className="live-player-mainline">
-            <ChannelLogo text={media.logo} />
+            {media.icon ? <img src={media.icon} alt="" className="player-channel-image" /> : <ChannelLogo text={media.logo || 'TV'} />}
             <div className="live-player-info">
-              <span>{media.number || '101'}</span>
+              <span>{media.number || ''}</span>
               <strong>{media.channel}</strong>
-              <small>{media.title}</small>
+              <small>{media.title || 'In onda ora'}</small>
             </div>
 
             <div className="live-player-next">
               <span>NEXT</span>
-              <strong>22:30</strong>
-              <small>Prossimo programma</small>
+              <strong>{nextLabel}</strong>
+              <small>{media.epg ? 'EPG' : 'Guida non disponibile'}</small>
             </div>
 
             <div className="live-player-zap">
-              <strong>CH+ / CH-</strong>
-              <small>Cambia canale</small>
+              <strong>{quality}</strong>
+              <small>{media.category || 'Live TV'}</small>
             </div>
           </div>
 
           <div className="player-progress-row live">
-            <span>{media.time?.split(' - ')?.[0] || '20:00'}</span>
-            <ProgressBar value={media.progress || 42} />
-            <span>{media.time?.split(' - ')?.[1] || '22:30'}</span>
+            <span>{startLabel}</span>
+            <ProgressBar value={media.progress || 0} />
+            <span>{stopLabel}</span>
           </div>
 
           <div className="player-controls-row">
@@ -270,18 +322,15 @@ export default function PlayerScreen({
             </div>
 
             <div className="player-center-controls">
-              <PlayerButton label="Canale precedente">◀</PlayerButton>
-              <PlayerButton label={paused ? 'Riproduci' : 'Pausa'} className="main" onClick={() => setPaused((value) => !value)}>
+              <PlayerButton label={paused ? 'Riproduci' : 'Pausa'} className="main" onClick={togglePause}>
                 {paused ? <PlayIcon /> : <PauseIcon />}
               </PlayerButton>
-              <PlayerButton label="Canale successivo">▶</PlayerButton>
-              <PlayerButton label="Ricarica stream">↻</PlayerButton>
             </div>
 
             <div className="player-color-commands">
               <button type="button" onClick={onToggleFavorite}><ColorCommand color="red" label="Preferito" /></button>
               <button type="button" onClick={cycleQuality}><ColorCommand color="blue" label="Qualità" /></button>
-              <ColorCommand color="green" label="Lista canali" />
+              <ColorCommand color="green" label="Lista" />
               <button type="button" onClick={() => setAudioPanelOpen((value) => !value)}><ColorCommand color="yellow" label="Audio" /></button>
             </div>
           </div>
@@ -289,9 +338,9 @@ export default function PlayerScreen({
       ) : (
         <section className="player-glass-panel movie-control-panel">
           <div className="player-progress-row">
-            <span>{media.continueLabel?.replace('Riprendi da ', '') || '58:42'}</span>
-            <ProgressBar value={media.progress || 48} />
-            <span>-1:19:36</span>
+            <span>{media.continueLabel?.replace('Riprendi da ', '') || '00:00'}</span>
+            <ProgressBar value={media.progress || 0} />
+            <span>{quality}</span>
           </div>
 
           <div className="player-controls-row">
@@ -301,31 +350,17 @@ export default function PlayerScreen({
             </div>
 
             <div className="player-center-controls">
-              <PlayerButton label="Indietro 10 secondi">↶<small>10</small></PlayerButton>
-              <PlayerButton label={paused ? 'Riproduci' : 'Pausa'} className="main" onClick={() => setPaused((value) => !value)}>
+              <PlayerButton label={paused ? 'Riproduci' : 'Pausa'} className="main" onClick={togglePause}>
                 {paused ? <PlayIcon /> : <PauseIcon />}
               </PlayerButton>
-              <PlayerButton label="Avanti 10 secondi">↷<small>10</small></PlayerButton>
             </div>
 
             <div className="player-side-actions">
-              <PlayerButton label="Picture in picture" active={pipActive} onClick={() => setPipActive((value) => !value)}><PipIcon /></PlayerButton>
-              <PlayerButton label="Schermo intero" active={fullscreenActive} onClick={toggleFullscreen}><FullscreenIcon /></PlayerButton>
+              <PlayerButton label="Schermo intero" active={fullscreenActive} onClick={toggleFullscreen}>⛶</PlayerButton>
             </div>
-          </div>
-
-          <div className="player-color-commands movie">
-            <button type="button" onClick={onToggleFavorite}><ColorCommand color="red" label="Preferito" /></button>
-            <ColorCommand color="green" label={type === 'series' ? 'Episodi' : 'Scheda'} />
-            <button type="button" onClick={() => setAudioPanelOpen((value) => !value)}><ColorCommand color="yellow" label="Audio/Sub" /></button>
-            <button type="button" onClick={cycleQuality}><ColorCommand color="blue" label="Qualità" /></button>
           </div>
         </section>
       )}
-
-      <button type="button" className="player-back-hotspot" onClick={onBack}>
-        BACK
-      </button>
     </div>
   );
 }

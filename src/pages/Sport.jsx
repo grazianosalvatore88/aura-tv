@@ -5,6 +5,7 @@ import ChannelLogo from '../components/ChannelLogo.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { detectSportContent, sportChannels, sportEvents, sportFilters } from '../data/sports.js';
+import useAuraLibrary from '../services/useAuraLibrary.js';
 
 const initialFavoriteEvents = sportEvents.filter((item) => item.favorite).map((item) => item.id);
 const initialFavoriteChannels = sportChannels.filter((item) => item.favorite).map((item) => item.id);
@@ -94,6 +95,17 @@ function ChannelSportCard({ channel, selected, onSelect, onToggleFavorite }) {
 }
 
 export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
+  const library = useAuraLibrary();
+  const sourceSportChannels = library.channels.filter((channel) => channel.category === 'Sport' || /sport|calcio|tennis|motor|rai sport|sportitalia/i.test(`${channel.channel} ${channel.originalCategory || ''}`));
+  const liveSportChannels = sourceSportChannels.length ? sourceSportChannels.map((channel) => ({
+    ...channel,
+    provider: channel.source || 'Lista',
+    quality: channel.qualityLabel || channel.selectedResolution || 'HD',
+    group: channel.originalCategory || channel.category,
+    title: channel.title || 'Canale sportivo'
+  })) : sportChannels;
+  const filters = sourceSportChannels.length ? ['Tutto', 'Live ora', ...Array.from(new Set(liveSportChannels.map((channel) => channel.category || 'Sport')))] : sportFilters;
+
   const [activeFilter, setActiveFilter] = useState('Tutto');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(sportEvents[0]);
@@ -106,10 +118,10 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
     detection: detectSportContent(event)
   })), [favoriteEventIds]);
 
-  const enrichedChannels = useMemo(() => sportChannels.map((channel) => ({
+  const enrichedChannels = useMemo(() => liveSportChannels.map((channel) => ({
     ...channel,
     favorite: favoriteChannelIds.has(channel.id)
-  })), [favoriteChannelIds]);
+  })), [favoriteChannelIds, liveSportChannels]);
 
   const filteredEvents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -187,7 +199,7 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           onNavigate={onNavigate}
-          placeholder="Cerca sport, competizioni, DAZN, Sky, canali..."
+          placeholder="Cerca sport, competizioni, canali..."
         />
 
         <header className="clean-page-header sport-header">
@@ -199,7 +211,7 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
         </header>
 
         <div className="movie-filter-tabs visible clean-filter-tabs" role="tablist" aria-label="Filtri sport">
-          {sportFilters.map((filter) => (
+          {filters.map((filter) => (
             <button
               key={filter}
               type="button"

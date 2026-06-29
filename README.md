@@ -1,60 +1,44 @@
-# AURA TV v3.0.4
+# AURA TV v3.1.1
 
-Aggiornamento con modalità sorgente neutra.
+Motore EPG intelligente.
 
 ## Novità
 
-- Aggiunta modalità **Lista con link**.
-- Campi:
-  - Nome lista
-  - Link
-  - Username
-  - Password
-- Compatibilità neutra:
-  - Auto
-  - Standard
-  - Alta
-  - Diretta
-  - Web
-- Nessun riferimento visibile a nomi di app o provider esterni.
-- Tentativi automatici:
-  - API standard;
-  - lista generata;
-  - output mpegts;
-  - output m3u8;
-  - porte comuni;
-  - HTTP/HTTPS;
-  - profili di richiesta diversi.
-- Il motore AURA Live continua a:
-  - leggere la lista;
-  - pulire nomi;
-  - riconoscere qualità;
-  - unire doppioni;
-  - creare categorie;
-  - aprire lo stream nel player.
+- Motore EPG separato e più robusto.
+- Indicizzazione XMLTV.
+- Matching avanzato M3U ↔ EPG:
+  - tvg-id;
+  - tvg-name;
+  - nome normalizzato;
+  - alias Rai/Mediaset/La7/TV8/Nove e altri canali italiani.
+- Salvataggio solo programmi utili:
+  - fascia attuale;
+  - oggi;
+  - giorno successivo.
+- Cache EPG più leggera.
+- Riepilogo EPG:
+  - canali M3U trovati;
+  - canali EPG trovati;
+  - canali abbinati;
+  - canali mancanti;
+  - programmi salvati.
+- Loghi:
+  - usa tvg-logo dalla M3U se presente;
+  - usa icone XMLTV se presenti;
+  - usa fallback loghi ufficiali per principali canali italiani;
+  - altrimenti logo testuale elegante.
+- Pulsante **Analizza EPG**.
+- Pulsante **Riepilogo EPG**.
 
-## Come provarla
+## Come usare EPG
 
-1. Vai su **Impostazioni**.
-2. Vai su **Sorgente TV**.
-3. Seleziona **Lista con link**.
-4. Inserisci:
-   - Nome lista
-   - Link
-   - Username
-   - Password
-5. Lascia **Compatibilità: Auto**.
-6. Clicca **Test connessione**.
-7. Clicca **Salva sorgente**.
-8. Clicca **Aggiorna lista**.
-9. Vai su **Live TV**.
-
-Se Auto non va, prova:
-
-- Alta
-- Diretta
-- Standard
-- Web
+1. Impostazioni → Sorgente TV → M3U.
+2. Importa o incolla la lista M3U.
+3. Inserisci URL EPG, ad esempio:
+   `https://iptv-epg.org/files/epg-it.xml`
+4. Premi **Analizza EPG**.
+5. Premi **Riepilogo EPG** per vedere quanti canali sono stati abbinati.
+6. Vai su Home o Live TV.
 
 ## Comandi
 
@@ -63,10 +47,10 @@ npm install
 npm run dev
 ```
 
-Dopo aver sostituito i file:
+## Commit
 
 ```bash
 git add .
-git commit -m "Lista con link e compatibilita neutra Aura v3.0.4"
+git commit -m "Motore EPG intelligente Aura v3.1.1"
 git push
 ```

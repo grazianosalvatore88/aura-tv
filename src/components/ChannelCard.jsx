@@ -1,14 +1,16 @@
 import ChannelLogo from './ChannelLogo.jsx';
 import ProgressBar from './ProgressBar.jsx';
 
-export default function ChannelCard({ item, selected, onSelect }) {
+export default function ChannelCard({ item, selected, onSelect, onOpen = () => {} }) {
   return (
     <button
+      type="button"
       className={`channel-card ${selected ? 'selected' : ''}`}
+      onClick={() => onOpen(item)}
       onMouseEnter={() => onSelect(item)}
       onFocus={() => onSelect(item)}
     >
-      <ChannelLogo text={item.logo} />
+      {item.icon ? <img src={item.icon} alt="" className="channel-card-image" /> : <ChannelLogo text={item.logo} />}
       <div className="channel-card-content">
         <strong>{item.channel}</strong>
         <p>{item.title}</p>

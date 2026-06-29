@@ -3,16 +3,28 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ChannelLogo from '../components/ChannelLogo.jsx';
 import MediaDetail from '../components/MediaDetail.jsx';
+import PlayerScreen from '../components/PlayerScreen.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { MediaRail } from '../components/MediaSections.jsx';
 import { liveChannels } from '../data/liveChannels.js';
 import { movies } from '../data/movies.js';
 import { series } from '../data/series.js';
+import useAuraLibrary from '../services/useAuraLibrary.js';
 
 const favoriteFilters = ['Tutti', 'Canali', 'Film', 'Serie TV'];
 const initialMovieFavorites = movies.filter((item) => item.favorite).map((item) => item.id);
 const initialSeriesFavorites = series.filter((item) => item.favorite).map((item) => item.id);
 const initialChannelFavorites = liveChannels.filter((item) => item.favorite).map((item) => item.id);
+
+function loadLiveFavoriteIds() {
+  try {
+    const stored = localStorage.getItem('aura-live-favorites');
+    if (stored) return JSON.parse(stored);
+  } catch {
+    // fallback below
+  }
+  return initialChannelFavorites;
+}
 
 function HeartIcon() {
   return (
@@ -23,39 +35,45 @@ function HeartIcon() {
 }
 
 export default function Favorites({ activePage = 'Preferiti', onNavigate = () => {} }) {
+  const library = useAuraLibrary();
+  const sourceChannels = library.channels.length ? library.channels : liveChannels;
+  const sourceMovies = library.movies.length ? library.movies : movies;
+  const sourceSeries = library.series.length ? library.series : series;
+
   const [activeFilter, setActiveFilter] = useState('Tutti');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [playerChannel, setPlayerChannel] = useState(null);
   const [movieFavoriteIds, setMovieFavoriteIds] = useState(() => new Set(initialMovieFavorites));
   const [seriesFavoriteIds, setSeriesFavoriteIds] = useState(() => new Set(initialSeriesFavorites));
-  const [channelFavoriteIds, setChannelFavoriteIds] = useState(() => new Set(initialChannelFavorites));
+  const [channelFavoriteIds, setChannelFavoriteIds] = useState(() => new Set(loadLiveFavoriteIds()));
   const [movieQuality, setMovieQuality] = useState(() => Object.fromEntries(movies.map((item) => [item.id, item.quality])));
   const [seriesQuality, setSeriesQuality] = useState(() => Object.fromEntries(series.map((item) => [item.id, item.quality])));
 
-  const favoriteMovies = useMemo(() => movies
+  const favoriteMovies = useMemo(() => sourceMovies
     .filter((item) => movieFavoriteIds.has(item.id))
     .map((item) => ({
       ...item,
       favorite: true,
       selectedQuality: movieQuality[item.id] || item.quality
-    })), [movieFavoriteIds, movieQuality]);
+    })), [movieFavoriteIds, movieQuality, sourceMovies]);
 
-  const favoriteSeries = useMemo(() => series
+  const favoriteSeries = useMemo(() => sourceSeries
     .filter((item) => seriesFavoriteIds.has(item.id))
     .map((item) => ({
       ...item,
       favorite: true,
       selectedQuality: seriesQuality[item.id] || item.quality
-    })), [seriesFavoriteIds, seriesQuality]);
+    })), [seriesFavoriteIds, seriesQuality, sourceSeries]);
 
-  const favoriteChannels = useMemo(() => liveChannels
+  const favoriteChannels = useMemo(() => sourceChannels
     .filter((item) => channelFavoriteIds.has(item.id))
     .map((item) => ({
       ...item,
       favorite: true,
       selectedQuality: item.qualityLabel || 'HD'
-    })), [channelFavoriteIds]);
+    })), [channelFavoriteIds, sourceChannels]);
 
   const query = searchQuery.trim().toLowerCase();
 
@@ -116,7 +134,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
   function cycleQuality(itemId, type) {
     if (type === 'film') {
       setMovieQuality((current) => {
-        const item = movies.find((movie) => movie.id === itemId);
+        const item = sourceMovies.find((movie) => movie.id === itemId);
         if (!item?.availableQualities?.length) return current;
         const options = item.availableQualities;
         const currentValue = current[itemId] || item.quality || options[0];
@@ -127,7 +145,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
 
     if (type === 'series') {
       setSeriesQuality((current) => {
-        const item = series.find((entry) => entry.id === itemId);
+        const item = sourceSeries.find((entry) => entry.id === itemId);
         if (!item?.availableQualities?.length) return current;
         const options = item.availableQualities;
         const currentValue = current[itemId] || item.quality || options[0];
@@ -147,6 +165,16 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
     setSelectedItem(item);
     setDetail({ type: 'series', item });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (playerChannel) {
+    return (
+      <PlayerScreen
+        mode="live"
+        channel={playerChannel}
+        onBack={() => setPlayerChannel(null)}
+      />
+    );
   }
 
   if (detail?.type === 'film') {
@@ -237,7 +265,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
                     <button
                       type="button"
                       className="favorite-channel-main-v23"
-                      onClick={() => setSelectedItem(channel)}
+                      onClick={() => setPlayerChannel(channel)}
                     >
                       <ChannelLogo text={channel.logo} />
                       <div>

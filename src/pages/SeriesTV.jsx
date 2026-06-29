@@ -6,24 +6,29 @@ import MediaDetail from '../components/MediaDetail.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { seriesFilters, series } from '../data/series.js';
+import useAuraLibrary from '../services/useAuraLibrary.js';
 
 const initialFavoriteIds = series.filter((item) => item.favorite).map((item) => item.id);
 
 export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {} }) {
+  const library = useAuraLibrary();
+  const sourceSeries = library.series.length ? library.series : series;
+  const filters = library.series.length ? ['Tutte', ...Array.from(new Set(sourceSeries.flatMap((item) => item.genres || []))), '4K'] : seriesFilters;
+
   const [activeFilter, setActiveFilter] = useState('Tutte');
   const [selectedSeries, setSelectedSeries] = useState(series[0]);
   const [detailSeries, setDetailSeries] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuality, setSelectedQuality] = useState(() => Object.fromEntries(
-    series.map((item) => [item.id, item.quality])
+    sourceSeries.map((item) => [item.id, item.quality])
   ));
 
-  const enrichedSeries = useMemo(() => series.map((item) => ({
+  const enrichedSeries = useMemo(() => sourceSeries.map((item) => ({
     ...item,
     favorite: favoriteIds.has(item.id),
     selectedQuality: selectedQuality[item.id] || item.quality
-  })), [favoriteIds, selectedQuality]);
+  })), [favoriteIds, selectedQuality, sourceSeries]);
 
   const filteredSeries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -97,7 +102,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
 
   function cycleQuality(seriesId) {
     setSelectedQuality((current) => {
-      const item = series.find((entry) => entry.id === seriesId);
+      const item = sourceSeries.find((entry) => entry.id === seriesId);
       if (!item?.availableQualities?.length) return current;
       const options = item.availableQualities;
       const currentValue = current[seriesId] || item.quality || options[0];
@@ -212,7 +217,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
         </section>
 
         <div className="movie-filter-tabs visible" role="tablist" aria-label="Filtri serie TV">
-          {seriesFilters.map((filter) => (
+          {filters.map((filter) => (
             <button
               key={filter}
               type="button"

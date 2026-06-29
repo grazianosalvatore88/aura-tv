@@ -6,9 +6,12 @@ export default function StreamVideo({
   poster,
   muted,
   paused,
+  streamType = '',
   onStatusChange = () => {}
 }) {
   const videoRef = useRef(null);
+  const dashRef = useRef(null);
+  const hlsRef = useRef(null);
   const [failedPrimary, setFailedPrimary] = useState(false);
   const activeSrc = failedPrimary && fallbackSrc ? fallbackSrc : src;
 
@@ -20,7 +23,95 @@ export default function StreamVideo({
     const video = videoRef.current;
     if (!video || !activeSrc) return undefined;
 
-    onStatusChange('Caricamento stream...');
+    let cancelled = false;
+
+    async function attachStream() {
+      onStatusChange('Caricamento stream...');
+
+      const isDash = streamType === 'dash' || /\.mpd($|\?)/i.test(activeSrc);
+      const isHls = streamType === 'hls' || /\.m3u8($|\?)/i.test(activeSrc);
+
+      try {
+        if (dashRef.current) {
+          dashRef.current.reset();
+          dashRef.current = null;
+        }
+
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+
+        video.muted = muted;
+        video.playsInline = true;
+        video.preload = 'metadata';
+
+        if (isDash) {
+          const dashModule = await import('dashjs');
+          if (cancelled) return;
+
+          const dashjs = dashModule.default || dashModule;
+          const player = dashjs.MediaPlayer().create();
+          player.updateSettings({
+            streaming: {
+              buffer: {
+                fastSwitchEnabled: true,
+                initialBufferLevel: 4
+              }
+            }
+          });
+          player.initialize(video, activeSrc, !paused);
+          dashRef.current = player;
+          onStatusChange('DASH pronto');
+          return;
+        }
+
+        if (isHls && !video.canPlayType('application/vnd.apple.mpegurl')) {
+          const hlsModule = await import('hls.js');
+          if (cancelled) return;
+
+          const Hls = hlsModule.default || hlsModule;
+          if (Hls.isSupported()) {
+            const hls = new Hls({
+              maxBufferLength: 12,
+              maxMaxBufferLength: 24,
+              liveSyncDurationCount: 2,
+              liveMaxLatencyDurationCount: 5,
+              enableWorker: true,
+              backBufferLength: 10
+            });
+
+            hls.loadSource(activeSrc);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.ERROR, (_, data) => {
+              if (data?.fatal) {
+                if (!failedPrimary && fallbackSrc) {
+                  setFailedPrimary(true);
+                  onStatusChange('Fallback stream...');
+                } else {
+                  onStatusChange('Stream non disponibile');
+                }
+              }
+            });
+            hlsRef.current = hls;
+            return;
+          }
+        }
+
+        video.src = activeSrc;
+
+        if (!paused) {
+          video.play().catch(() => onStatusChange('Premi play per avviare'));
+        }
+      } catch {
+        if (!failedPrimary && fallbackSrc) {
+          setFailedPrimary(true);
+          onStatusChange('Fallback stream...');
+        } else {
+          onStatusChange('Stream non disponibile');
+        }
+      }
+    }
 
     function handleCanPlay() {
       onStatusChange('Stream pronto');
@@ -54,25 +145,30 @@ export default function StreamVideo({
     video.addEventListener('playing', handlePlaying);
     video.addEventListener('error', handleError);
 
-    video.src = activeSrc;
-    video.muted = muted;
-    video.playsInline = true;
-    video.preload = 'metadata';
-
-    if (!paused) {
-      video.play().catch(() => onStatusChange('Premi play per avviare'));
-    }
+    attachStream();
 
     return () => {
+      cancelled = true;
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('error', handleError);
+
+      if (dashRef.current) {
+        dashRef.current.reset();
+        dashRef.current = null;
+      }
+
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+
       video.removeAttribute('src');
       video.load();
     };
-  }, [activeSrc, fallbackSrc, failedPrimary, muted, onStatusChange, paused]);
+  }, [activeSrc, fallbackSrc, failedPrimary, muted, onStatusChange, paused, streamType]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -87,7 +183,7 @@ export default function StreamVideo({
 
     if (paused) {
       video.pause();
-    } else {
+    } else if (!dashRef.current) {
       video.play().catch(() => onStatusChange('Premi play per avviare'));
     }
   }, [activeSrc, onStatusChange, paused]);

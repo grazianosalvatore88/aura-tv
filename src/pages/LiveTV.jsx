@@ -5,8 +5,10 @@ import ChannelLogo from '../components/ChannelLogo.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import PlayerScreen from '../components/PlayerScreen.jsx';
 import { guideRows, liveCategories, liveChannels } from '../data/liveChannels.js';
-import { getXtreamConfig, loadAuraSettings } from '../services/xtreamService.js';
-import { loadXtreamLiveLibrary } from '../services/auraEngine.js';
+import { loadAuraSettings } from '../services/xtreamService.js';
+import { loadAuraLiveLibrary } from '../services/auraEngine.js';
+import { enrichChannelsWithEpg, loadEpgCache } from '../services/epgService.js';
+import { getDeviceDate } from '../services/timeService.js';
 
 const FAVORITES_KEY = 'aura-live-favorites';
 
@@ -73,9 +75,12 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
 
     async function loadLibrary() {
       const settings = loadAuraSettings();
-      const config = getXtreamConfig(settings);
 
-      if (!config) {
+      const sourceReady = ['M3U locale', 'M3U'].includes(settings?.sourceType)
+        ? Boolean(settings?.m3u?.localText?.includes('#EXTM3U'))
+        : Boolean(settings?.xtream?.serverUrl || settings?.xtream?.linkUrl);
+
+      if (!sourceReady) {
         setLibrary({
           mode: 'demo',
           channels: liveChannels,
@@ -91,16 +96,19 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
         setLoadingLibrary(true);
         setLibraryError('');
 
-        const result = await loadXtreamLiveLibrary(settings);
+        const result = await loadAuraLiveLibrary(settings);
 
         if (cancelled) return;
 
         if (result.channels.length) {
-          setLibrary(result);
-          setSelectedChannel(result.channels[0]);
+          const epg = loadEpgCache();
+          const epgChannels = enrichChannelsWithEpg(result.channels, epg, getDeviceDate());
+          const resultWithEpg = { ...result, channels: epgChannels, live: epgChannels, epg };
+          setLibrary(resultWithEpg);
+          setSelectedChannel(epgChannels[0]);
           setActiveCategory('Tutti');
           setResolutionMap(Object.fromEntries(
-            result.channels.map((item) => [item.id, item.selectedResolution || item.qualityLabel || 'HD'])
+            epgChannels.map((item) => [item.id, item.selectedResolution || item.qualityLabel || 'HD'])
           ));
         } else {
           setLibrary({
@@ -130,8 +138,17 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
 
     loadLibrary();
 
+    function reloadLibrary() {
+      loadLibrary();
+    }
+
+    window.addEventListener('aura-settings-updated', reloadLibrary);
+    window.addEventListener('aura-epg-updated', reloadLibrary);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('aura-settings-updated', reloadLibrary);
+      window.removeEventListener('aura-epg-updated', reloadLibrary);
     };
   }, []);
 
@@ -293,31 +310,6 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
           placeholder="Cerca canali live, programmi, categorie..."
         />
 
-        <div className={(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'aura-engine-status glass-panel active' : 'aura-engine-status glass-panel'}>
-          <div>
-            <span className="eyebrow">{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'Motore AURA Live' : 'Modalità demo'}</span>
-            <strong>
-              {loadingLibrary
-                ? 'Caricamento lista...'
-                : (library.mode === 'xtream-api' || library.mode === 'xtream-m3u')
-                  ? `${library.stats?.visibleCount || channelsWithFavorites.length} canali ordinati`
-                  : 'Configura una sorgente nelle impostazioni per caricare la lista reale'}
-            </strong>
-            <small>
-              {(library.mode === 'xtream-api' || library.mode === 'xtream-m3u')
-                ? `${library.stats?.duplicateCount || 0} doppioni uniti · ${library.stats?.categories || 0} categorie${library.stats?.fallbackUsed ? ' · fallback M3U' : ''}`
-                : libraryError || 'Dati demo attivi'}
-            </small>
-          </div>
-          <button type="button" onClick={() => onNavigate('Impostazioni')}>Sorgente TV</button>
-        </div>
-
-        {libraryError ? (
-          <div className="aura-live-error glass-panel">
-            {libraryError}
-          </div>
-        ) : null}
-
         {showCategories ? (
           <div className="live-tabs" role="tablist" aria-label="Categorie Live TV">
             {allCategories.map((category) => (
@@ -397,7 +389,6 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
                 <div className="preview-brand-row">
                   {visibleChannel.icon ? <img src={visibleChannel.icon} alt="" className="preview-channel-image" /> : <ChannelLogo text={visibleChannel.logo} />}
                   <div className="preview-channel-meta">
-                    <span className="live-badge">{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'AURA' : 'LIVE'}</span>
                     <strong>{visibleChannel.channel}</strong>
                     <small>{visibleChannel.selectedResolution}</small>
                   </div>
@@ -466,15 +457,31 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
             <div className="guide-heading">
               <div>
                 <span className="eyebrow">EPG</span>
-                <h2>{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'Guida TV base' : 'Guida TV'}</h2>
+                <h2>{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u' || library.mode === 'm3u-local') ? 'Guida TV base' : 'Guida TV'}</h2>
               </div>
               <button type="button">Oggi ▾</button>
             </div>
 
-            {(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? (
-              <div className="aura-guide-placeholder">
-                <strong>EPG reale nella prossima fase.</strong>
-                <span>Per ora AURA carica canali, categorie, qualità, duplicati e stream live.</span>
+            {library.epg ? (
+              <div className="guide-grid">
+                {filteredChannels.slice(0, 8).map((channel) => (
+                  <div className="guide-row" key={channel.id}>
+                    <div className="guide-channel-name">
+                      {channel.icon ? <img src={channel.icon} alt="" className="channel-logo-image" /> : <ChannelLogo text={channel.logo} />}
+                      <strong>{channel.channel}</strong>
+                    </div>
+                    <div className="guide-programs">
+                      <button type="button" className={channel.epg ? 'active' : ''}>
+                        <strong>{channel.title || 'Programmazione non disponibile'}</strong>
+                        <span>{channel.time || 'Ora'}</span>
+                      </button>
+                      <button type="button">
+                        <strong>{channel.nextProgram || 'Prossimo programma non disponibile'}</strong>
+                        <span>Next</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <>

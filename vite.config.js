@@ -342,8 +342,181 @@ function sourceDevProxy() {
   };
 }
 
+
+function isSafeHttpUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+async function readM3uJsonBody(req) {
+  return await new Promise((resolve) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+}
+
+function m3uDevProxy() {
+  return {
+    name: 'aura-m3u-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/m3u', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end(JSON.stringify({ ok: true }));
+          return;
+        }
+
+        try {
+          const body = req.method === 'POST' ? await readM3uJsonBody(req) : {};
+          const requestUrl = new URL(req.url || '', 'http://localhost');
+          const playlistUrl = String(body.url || requestUrl.searchParams.get('url') || '').trim();
+
+          if (!isSafeHttpUrl(playlistUrl)) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ ok: false, error: 'URL M3U non valido' }));
+            return;
+          }
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 24000);
+
+          const response = await fetch(playlistUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/x-mpegURL,text/plain,*/*',
+              'User-Agent': 'AURA-TV/3.0.6'
+            }
+          }).finally(() => clearTimeout(timeout));
+
+          const text = await response.text();
+
+          if (!response.ok) {
+            res.statusCode = response.status;
+            res.end(JSON.stringify({ ok: false, error: `Errore sorgente M3U ${response.status}` }));
+            return;
+          }
+
+          if (!text.includes('#EXTM3U')) {
+            res.statusCode = 422;
+            res.end(JSON.stringify({ ok: false, error: 'La sorgente non sembra una lista M3U valida' }));
+            return;
+          }
+
+          res.statusCode = 200;
+          res.end(JSON.stringify({ ok: true, data: text }));
+        } catch (error) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({
+            ok: false,
+            error: error?.name === 'AbortError'
+              ? 'Timeout lettura M3U'
+              : error?.message || 'Errore lettura M3U'
+          }));
+        }
+      });
+    }
+  };
+}
+
+
+async function readEpgJsonBody(req) {
+  return await new Promise((resolve) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+}
+
+function epgDevProxy() {
+  return {
+    name: 'aura-epg-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/epg', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 200;
+          res.end(JSON.stringify({ ok: true }));
+          return;
+        }
+
+        try {
+          const body = req.method === 'POST' ? await readEpgJsonBody(req) : {};
+          const requestUrl = new URL(req.url || '', 'http://localhost');
+          const epgUrl = String(body.url || requestUrl.searchParams.get('url') || '').trim();
+
+          if (!isSafeHttpUrl(epgUrl)) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ ok: false, error: 'URL EPG non valido' }));
+            return;
+          }
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 28000);
+
+          const response = await fetch(epgUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/xml,text/xml,text/plain,*/*',
+              'User-Agent': 'AURA-TV/3.0.9'
+            }
+          }).finally(() => clearTimeout(timeout));
+
+          const text = await response.text();
+
+          if (!response.ok) {
+            res.statusCode = response.status;
+            res.end(JSON.stringify({ ok: false, error: `Errore sorgente EPG ${response.status}` }));
+            return;
+          }
+
+          if (!text.includes('<tv') && !text.includes('<programme')) {
+            res.statusCode = 422;
+            res.end(JSON.stringify({ ok: false, error: 'La sorgente non sembra un XMLTV valido' }));
+            return;
+          }
+
+          res.statusCode = 200;
+          res.end(JSON.stringify({ ok: true, data: text }));
+        } catch (error) {
+          res.statusCode = 500;
+          res.end(JSON.stringify({
+            ok: false,
+            error: error?.name === 'AbortError' ? 'Timeout lettura EPG' : error?.message || 'Errore lettura EPG'
+          }));
+        }
+      });
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), sourceDevProxy()],
+  plugins: [react(), sourceDevProxy(), m3uDevProxy(), epgDevProxy()],
   server: {
     host: '0.0.0.0'
   }

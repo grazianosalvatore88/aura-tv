@@ -11,45 +11,38 @@ const resumeFilters = ['Tutto', 'Film', 'Serie TV'];
 
 function ResumeCard({ item, type, selected, onSelect, onOpen, onRemove }) {
   return (
-    <button
-      type="button"
-      className={selected ? 'resume-card glass-panel selected' : 'resume-card glass-panel'}
+    <article
+      className={selected ? 'resume-card-v23 glass-panel selected' : 'resume-card-v23 glass-panel'}
       style={{ '--resume-bg': `url(${item.backdrop})` }}
       onMouseEnter={() => onSelect(item)}
-      onClick={() => onOpen(item)}
     >
-      <span className="resume-card-shade" />
-      <span className="resume-card-content">
-        <span className="continue-type">{type === 'series' ? item.currentEpisode : 'Film'}</span>
-        <strong>{item.title}</strong>
-        <small>{item.continueLabel}</small>
-        <span className="resume-card-meta">
-          <span>{type === 'series' ? item.seasons : item.duration}</span>
-          <span>{item.selectedQuality}</span>
-          <span>★ {item.rating}</span>
+      <button
+        type="button"
+        className="resume-card-main-v23"
+        onClick={() => onOpen(item)}
+      >
+        <span className="resume-card-shade-v23" />
+        <span className="resume-card-content-v23">
+          <span className="continue-type">{type === 'series' ? item.currentEpisode : 'Film'}</span>
+          <strong>{item.title}</strong>
+          <small>{item.continueLabel}</small>
+          <span className="resume-card-meta">
+            <span>{type === 'series' ? item.seasons : item.duration}</span>
+            <span>{item.selectedQuality}</span>
+            <span>★ {item.rating}</span>
+          </span>
+          <ProgressBar value={item.progress} />
         </span>
-        <ProgressBar value={item.progress} />
-      </span>
+      </button>
 
-      <span
-        role="button"
-        tabIndex={0}
-        className="resume-remove"
-        onClick={(event) => {
-          event.stopPropagation();
-          onRemove(item.id, type);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            event.stopPropagation();
-            onRemove(item.id, type);
-          }
-        }}
+      <button
+        type="button"
+        className="resume-remove-v23"
+        onClick={() => onRemove(item.id, type)}
       >
         Rimuovi
-      </span>
-    </button>
+      </button>
+    </article>
   );
 }
 
@@ -104,7 +97,7 @@ export default function Resume({ activePage = 'Riprendi', onNavigate = () => {} 
     return items;
   }, [activeFilter, resumeMovies, resumeSeries, searchQuery, sortMode]);
 
-  const heroItem = selectedItem || resumeItems[0] || resumeMovies[0] || resumeSeries[0];
+  const selectedResumeItem = selectedItem || resumeItems[0] || resumeMovies[0] || resumeSeries[0];
 
   function removeFromResume(id, type) {
     setHiddenIds((current) => new Set(current).add(`${type}:${id}`));
@@ -186,33 +179,23 @@ export default function Resume({ activePage = 'Riprendi', onNavigate = () => {} 
 
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
-      <main className="app-main resume-page">
+      <main className="app-main resume-page clean-library-page">
         <TopMenu
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Cerca tra film e serie iniziati..."
         />
 
-        <section className="library-hero resume-hero glass-panel" style={{ '--library-bg': `url(${heroItem?.backdrop || ''})` }}>
-          <div className="library-hero-content">
+        <header className="clean-page-header">
+          <div>
             <span className="eyebrow">Continua da dove eri rimasto</span>
             <h1>Riprendi</h1>
-            <p>Qui trovi solo film e serie TV iniziati. I canali live e lo sport restano nella Home e nelle rispettive sezioni.</p>
-
-            {heroItem ? (
-              <div className="library-feature-card">
-                <span className="library-mini-poster" style={{ '--poster': `url(${heroItem.poster})` }} />
-                <div>
-                  <strong>{heroItem.title}</strong>
-                  <span>{heroItem.continueLabel} · {heroItem.progress}%</span>
-                </div>
-              </div>
-            ) : null}
+            <p>Solo film e serie TV iniziati, senza canali live o sport.</p>
           </div>
-        </section>
+        </header>
 
-        <div className="resume-toolbar">
-          <div className="movie-filter-tabs visible" role="tablist" aria-label="Filtri Riprendi">
+        <div className="resume-toolbar-v23">
+          <div className="movie-filter-tabs visible clean-filter-tabs" role="tablist" aria-label="Filtri Riprendi">
             {resumeFilters.map((filter) => (
               <button
                 key={filter}
@@ -231,13 +214,13 @@ export default function Resume({ activePage = 'Riprendi', onNavigate = () => {} 
         </div>
 
         {resumeItems.length ? (
-          <section className="resume-grid">
+          <section className="resume-grid-v23">
             {resumeItems.map((item) => (
               <ResumeCard
                 key={`${item.type}-${item.id}`}
                 item={item}
                 type={item.type}
-                selected={heroItem?.id === item.id}
+                selected={selectedResumeItem?.id === item.id}
                 onSelect={setSelectedItem}
                 onOpen={openDetail}
                 onRemove={removeFromResume}
@@ -258,7 +241,7 @@ export default function Resume({ activePage = 'Riprendi', onNavigate = () => {} 
             { key: 'rosso', color: 'red', label: 'Rimuovi' },
             { key: 'verde', color: 'green', label: 'Filtra' },
             { key: 'giallo', color: 'yellow', label: 'Ordina' },
-            { key: 'blu', color: 'blue', label: 'Dettagli' }
+            { key: 'blu', color: 'blue', label: 'Info' }
           ]}
         />
       </main>

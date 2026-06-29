@@ -14,6 +14,14 @@ const initialMovieFavorites = movies.filter((item) => item.favorite).map((item) 
 const initialSeriesFavorites = series.filter((item) => item.favorite).map((item) => item.id);
 const initialChannelFavorites = liveChannels.filter((item) => item.favorite).map((item) => item.id);
 
+function HeartIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 21s-7.2-4.35-9.6-8.65C.58 9.08 2.2 5.2 5.85 4.45 8 4.02 10.04 5.04 12 7.12c1.96-2.08 4-3.1 6.15-2.67 3.65.75 5.27 4.63 3.45 7.9C19.2 16.65 12 21 12 21Z" />
+    </svg>
+  );
+}
+
 export default function Favorites({ activePage = 'Preferiti', onNavigate = () => {} }) {
   const [activeFilter, setActiveFilter] = useState('Tutti');
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,20 +76,14 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
   const filteredChannels = favoriteChannels.filter((item) => !query || [
     item.channel,
     item.title,
-    item.category
+    item.category,
+    item.qualityLabel
   ].join(' ').toLowerCase().includes(query));
 
   const showChannels = activeFilter === 'Tutti' || activeFilter === 'Canali';
   const showMovies = activeFilter === 'Tutti' || activeFilter === 'Film';
   const showSeries = activeFilter === 'Tutti' || activeFilter === 'Serie TV';
-
-  const heroItem = selectedItem
-    || filteredMovies[0]
-    || filteredSeries[0]
-    || filteredChannels[0]
-    || favoriteMovies[0]
-    || favoriteSeries[0]
-    || favoriteChannels[0];
+  const selectedForRail = selectedItem || filteredMovies[0] || filteredSeries[0] || {};
 
   function removeFavorite(item, type) {
     if (type === 'movie') {
@@ -188,36 +190,22 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
 
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
-      <main className="app-main favorites-page">
+      <main className="app-main favorites-page clean-library-page">
         <TopMenu
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Cerca nei preferiti..."
         />
 
-        <section className="library-hero glass-panel" style={{ '--library-bg': `url(${heroItem?.backdrop || heroItem?.background || ''})` }}>
-          <div className="library-hero-content">
+        <header className="clean-page-header">
+          <div>
             <span className="eyebrow">La tua raccolta</span>
             <h1>Preferiti</h1>
-            <p>Canali, film e serie TV salvati in un unico posto, pronti da aprire con il telecomando.</p>
-
-            {heroItem ? (
-              <div className="library-feature-card">
-                {'poster' in heroItem ? (
-                  <span className="library-mini-poster" style={{ '--poster': `url(${heroItem.poster})` }} />
-                ) : (
-                  <ChannelLogo text={heroItem.logo} />
-                )}
-                <div>
-                  <strong>{heroItem.title || heroItem.channel}</strong>
-                  <span>{heroItem.genres?.join(' · ') || heroItem.category} · {heroItem.selectedQuality}</span>
-                </div>
-              </div>
-            ) : null}
+            <p>Canali, film e serie TV salvati in un unico posto.</p>
           </div>
-        </section>
+        </header>
 
-        <div className="movie-filter-tabs visible" role="tablist" aria-label="Filtri preferiti">
+        <div className="movie-filter-tabs visible clean-filter-tabs" role="tablist" aria-label="Filtri preferiti">
           {favoriteFilters.map((filter) => (
             <button
               key={filter}
@@ -231,46 +219,42 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
         </div>
 
         {showChannels ? (
-          <section className="favorite-section">
+          <section className="favorite-section compact-favorite-section">
             <div className="section-heading">
               <h2>Canali preferiti</h2>
               <button type="button">Vedi tutti</button>
             </div>
 
             {filteredChannels.length ? (
-              <div className="favorite-channel-grid">
+              <div className="favorite-channel-grid-v23">
                 {filteredChannels.map((channel) => (
-                  <button
+                  <article
                     key={channel.id}
-                    type="button"
-                    className="favorite-channel-card glass-panel"
-                    onClick={() => setSelectedItem(channel)}
+                    className="favorite-channel-card-v23 glass-panel"
+                    onMouseEnter={() => setSelectedItem(channel)}
                   >
-                    <ChannelLogo text={channel.logo} />
-                    <div>
-                      <strong>{channel.channel}</strong>
-                      <span>{channel.title}</span>
-                      <small>{channel.category} · {channel.selectedQuality}</small>
-                    </div>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="mini-remove"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        removeFavorite(channel, 'channel');
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          removeFavorite(channel, 'channel');
-                        }
-                      }}
+                    <button
+                      type="button"
+                      className="favorite-channel-main-v23"
+                      onClick={() => setSelectedItem(channel)}
                     >
-                      ♥
-                    </span>
-                  </button>
+                      <ChannelLogo text={channel.logo} />
+                      <div>
+                        <strong>{channel.channel}</strong>
+                        <span>{channel.title}</span>
+                        <small>{channel.category} · {channel.selectedQuality}</small>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="favorite-heart-v23"
+                      aria-label={`Rimuovi ${channel.channel} dai preferiti`}
+                      onClick={() => removeFavorite(channel, 'channel')}
+                    >
+                      <HeartIcon />
+                    </button>
+                  </article>
                 ))}
               </div>
             ) : (
@@ -283,7 +267,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
           <MediaRail
             title="Film preferiti"
             items={filteredMovies}
-            selectedItem={heroItem || filteredMovies[0] || {}}
+            selectedItem={selectedForRail}
             onSelect={setSelectedItem}
             onOpen={openMovie}
             emptyText="Nessun film preferito trovato."
@@ -294,7 +278,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
           <MediaRail
             title="Serie TV preferite"
             items={filteredSeries}
-            selectedItem={heroItem || filteredSeries[0] || {}}
+            selectedItem={selectedForRail}
             onSelect={setSelectedItem}
             onOpen={openSeries}
             emptyText="Nessuna serie preferita trovata."
@@ -308,7 +292,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
             { key: 'rosso', color: 'red', label: 'Rimuovi preferito' },
             { key: 'verde', color: 'green', label: 'Filtra tipo' },
             { key: 'giallo', color: 'yellow', label: 'Ordina' },
-            { key: 'blu', color: 'blue', label: 'Dettagli' }
+            { key: 'blu', color: 'blue', label: 'Info' }
           ]}
         />
       </main>

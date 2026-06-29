@@ -9,16 +9,6 @@ const initialFavoriteIds = liveChannels
   .filter((item) => item.favorite)
   .map((item) => item.id);
 
-function InfoIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 10v6" />
-      <path d="M12 7h.01" />
-    </svg>
-  );
-}
-
 function GridIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -280,8 +270,8 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
 
               <div className="live-actions">
                 <button className="primary">▶ Guarda canale</button>
-                <button className="round-action" aria-label="Informazioni programma" onClick={() => setShowInfoPanel((current) => !current)}>
-                  <InfoIcon />
+                <button className="round-action text-action" aria-label="Informazioni programma" onClick={() => setShowInfoPanel((current) => !current)}>
+                  Info
                 </button>
                 <button
                   type="button"

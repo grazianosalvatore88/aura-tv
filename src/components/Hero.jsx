@@ -22,7 +22,7 @@ export default function Hero({ item }) {
 
         <div className="hero-buttons">
           <button className="primary">▶ Guarda ora</button>
-          <button className="secondary">ⓘ Dettagli</button>
+          <button className="secondary">Info</button>
         </div>
       </div>
     </section>

@@ -1,26 +1,19 @@
-# AURA TV v2.5
+# AURA TV v2.9
 
 AURA TV è un prototipo React/Vite di interfaccia TV premium.
 
-## Novità v2.5
+## Novità v2.9
 
-- Pulizia pagina **Sport**:
-  - rimossi testi esplicativi visibili sul riconoscimento automatico;
-  - rimosso il pannello “Info riconoscimento”;
-  - rimosso il filtro “Prossimamente”;
-  - rimosse le sezioni e le card “Prossimamente”;
-  - sezione **Live ora** con logo canale a sinistra;
-  - sezione **Canali sportivi** senza percentuali o dettagli tecnici.
-- Aggiunta pagina **Impostazioni**.
-- Il tasto impostazioni nella topbar apre la pagina Impostazioni da qualsiasi pagina.
-- Blocchi impostazioni:
-  - Sorgente TV;
-  - Player;
-  - Aspetto;
-  - Premium;
-  - Privacy;
-  - Sistema.
-- Legenda telecomando nella pagina Impostazioni.
+- Correzione definitiva pagina **Live TV**.
+- Sistemato errore che poteva causare schermata nera entrando in Live TV.
+- Player: tasto **BACK** spostato in alto a sinistra, allineato alle icone in alto a destra.
+- Titolo contenuto nel player posizionato sotto al tasto BACK con più respiro.
+- Icona impostazioni del player semplificata e resa più pulita.
+- Scheda comandi player ulteriormente abbassata e resa più compatta.
+- Play/pausa mantenuti centrati.
+- Pausa con due barre dritte uguali.
+- Audio con icona cassa speaker.
+- Tasti colorati coerenti con il resto dell’app.
 
 ## Pagine presenti
 
@@ -67,6 +60,6 @@ Dopo aver sostituito i file nel repository:
 ```bash
 npm install
 git add .
-git commit -m "Aggiunta Impostazioni e pulizia Sport Aura v2.5"
+git commit -m "Fix Live TV e player Aura v2.9"
 git push
 ```

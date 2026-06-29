@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ChannelLogo from '../components/ChannelLogo.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
+import PlayerScreen from '../components/PlayerScreen.jsx';
 import { guideRows, liveCategories, liveChannels } from '../data/liveChannels.js';
 
 const initialFavoriteIds = liveChannels
@@ -37,6 +38,7 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
   const [showGuide, setShowGuide] = useState(true);
   const [showCategories, setShowCategories] = useState(true);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [playerChannel, setPlayerChannel] = useState(null);
   const [resolutionMap, setResolutionMap] = useState(() => Object.fromEntries(
     liveChannels.map((item) => [item.id, item.qualityLabel || item.resolutions?.[0] || 'HD'])
   ));
@@ -70,13 +72,13 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
 
   useEffect(() => {
     if (!filteredChannels.length) return;
-    const stillVisible = filteredChannels.find((item) => item.id === selectedChannel.id);
+    const stillVisible = filteredChannels.find((item) => item.id === selectedChannel?.id);
     if (!stillVisible) {
       setSelectedChannel(filteredChannels[0]);
     }
-  }, [filteredChannels, selectedChannel.id]);
+  }, [filteredChannels, selectedChannel?.id]);
 
-  const visibleChannel = filteredChannels.find((item) => item.id === selectedChannel.id)
+  const visibleChannel = filteredChannels.find((item) => item.id === selectedChannel?.id)
     || filteredChannels[0]
     || channelsWithFavorites[0]
     || selectedChannel;
@@ -139,6 +141,20 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
     setSelectedChannel(filteredChannels[nextIndex]);
   }
 
+  if (playerChannel) {
+    const playerLiveChannel = channelsWithFavorites.find((item) => item.id === playerChannel.id) || visibleChannel || playerChannel;
+
+    return (
+      <PlayerScreen
+        mode="live"
+        channel={playerLiveChannel}
+        onBack={() => setPlayerChannel(null)}
+        onCycleQuality={() => cycleResolution(playerLiveChannel.id)}
+        onToggleFavorite={() => toggleFavorite(playerLiveChannel.id)}
+      />
+    );
+  }
+
   return (
     <div className="aura-app">
       <div className="ambient ambient-one" />
@@ -147,8 +163,11 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
       <main className="app-main live-page">
-        <TopMenu 
+        <TopMenu
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
           onNavigate={onNavigate}
+          placeholder="Cerca canali live, programmi, categorie..."
         />
 
         {showCategories ? (
@@ -271,7 +290,7 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
               ) : null}
 
               <div className="live-actions">
-                <button className="primary">▶ Guarda canale</button>
+                <button type="button" className="primary" onClick={() => setPlayerChannel(visibleChannel)}>▶ Guarda canale</button>
                 <button className="round-action text-action" aria-label="Informazioni programma" onClick={() => setShowInfoPanel((current) => !current)}>
                   Info
                 </button>

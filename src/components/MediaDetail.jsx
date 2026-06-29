@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import Sidebar from './Sidebar.jsx';
 import TopMenu from './TopMenu.jsx';
 import ProgressBar from './ProgressBar.jsx';
+import PlayerScreen from './PlayerScreen.jsx';
 
 const sampleEpisodes = [
   { episode: 'E01', title: 'Quando sei perso nell’oscurità', time: '52 min', progress: 100 },
@@ -63,6 +65,20 @@ export default function MediaDetail({
   onOpenRelated
 }) {
   const isSeries = type === 'series';
+  const [showPlayer, setShowPlayer] = useState(false);
+
+  if (showPlayer) {
+    return (
+      <PlayerScreen
+        mode="vod"
+        type={type}
+        item={item}
+        onBack={() => setShowPlayer(false)}
+        onCycleQuality={() => onCycleQuality(item.id)}
+        onToggleFavorite={() => onToggleFavorite(item.id)}
+      />
+    );
+  }
 
   return (
     <div className="aura-app">
@@ -109,7 +125,7 @@ export default function MediaDetail({
               ) : null}
 
               <div className="detail-actions">
-                <button type="button" className="primary">▶ Guarda ora</button>
+                <button type="button" className="primary" onClick={() => setShowPlayer(true)}>▶ Guarda ora</button>
                 <button type="button" className="secondary">Trailer</button>
                 <button
                   type="button"

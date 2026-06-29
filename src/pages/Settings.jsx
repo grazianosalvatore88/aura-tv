@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
+import { getXtreamConfig, testXtreamConnection, testXtreamM3u, xtreamM3uRequest, xtreamRequest } from '../services/xtreamService.js';
 
 const settingsTabs = [
   'Sorgente TV',
@@ -14,9 +15,12 @@ const settingsTabs = [
 const defaultSettings = {
   sourceType: 'Xtream',
   xtream: {
+    listName: '',
     serverUrl: '',
+    linkUrl: '',
     username: '',
-    password: ''
+    password: '',
+    clientMode: 'Auto'
   },
   m3u: {
     playlistUrl: ''
@@ -50,9 +54,34 @@ function safeLoadSettings() {
   try {
     const stored = localStorage.getItem('aura-tv-settings');
     if (!stored) return defaultSettings;
+    const parsed = JSON.parse(stored);
     return {
       ...defaultSettings,
-      ...JSON.parse(stored)
+      ...parsed,
+      xtream: {
+        ...defaultSettings.xtream,
+        ...(parsed.xtream || {})
+      },
+      m3u: {
+        ...defaultSettings.m3u,
+        ...(parsed.m3u || {})
+      },
+      stalker: {
+        ...defaultSettings.stalker,
+        ...(parsed.stalker || {})
+      },
+      player: {
+        ...defaultSettings.player,
+        ...(parsed.player || {})
+      },
+      premium: {
+        ...defaultSettings.premium,
+        ...(parsed.premium || {})
+      },
+      privacy: {
+        ...defaultSettings.privacy,
+        ...(parsed.privacy || {})
+      }
     };
   } catch {
     return defaultSettings;
@@ -149,8 +178,8 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
 
   const activeSource = settings.sourceType.toLowerCase();
   const sourceReady = useMemo(() => {
-    if (settings.sourceType === 'Xtream') {
-      return Boolean(settings.xtream.serverUrl && settings.xtream.username && settings.xtream.password);
+    if (settings.sourceType === 'Xtream' || settings.sourceType === 'Lista con link') {
+      return Boolean((settings.xtream.serverUrl || settings.xtream.linkUrl) && settings.xtream.username && settings.xtream.password);
     }
 
     if (settings.sourceType === 'M3U') {
@@ -183,7 +212,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }), true);
   }
 
-  function testConnection() {
+  async function testConnection() {
     if (!sourceReady) {
       setNotice({ status: 'error', message: 'Completa i campi della sorgente prima di testare la connessione.' });
       updateSettings((current) => ({
@@ -193,11 +222,54 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
       return;
     }
 
-    updateSettings((current) => ({
-      ...current,
-      connectionStatus: 'Test riuscito'
-    }), true);
-    setNotice({ status: 'ok', message: 'Test connessione riuscito. La sorgente è pronta per il collegamento reale.' });
+    if (settings.sourceType !== 'Xtream' && settings.sourceType !== 'Lista con link') {
+      updateSettings((current) => ({
+        ...current,
+        connectionStatus: 'Formato salvato'
+      }), true);
+      setNotice({ status: 'ok', message: 'Per ora il collegamento reale è attivo su Xtream. M3U e Stalker saranno collegati dopo.' });
+      return;
+    }
+
+    try {
+      setNotice({ status: 'ok', message: `Test sorgente in corso · compatibilità ${settings.xtream.clientMode || 'Auto'}...` });
+      const result = await testXtreamConnection(getXtreamConfig(settings));
+
+      updateSettings((current) => ({
+        ...current,
+        connectionStatus: result.ok ? 'Test riuscito' : 'Verifica credenziali'
+      }), true);
+
+      setNotice({
+        status: result.ok ? 'ok' : 'error',
+        message: result.ok
+          ? `Connessione Xtream riuscita. Stato account: ${result.status}.`
+          : 'Connessione raggiunta ma credenziali non confermate.'
+      });
+    } catch (error) {
+      try {
+        setNotice({ status: 'ok', message: 'Metodo principale non disponibile. Provo modalità alternativa...' });
+        const m3uOk = await testXtreamM3u(getXtreamConfig(settings));
+
+        updateSettings((current) => ({
+          ...current,
+          connectionStatus: m3uOk ? 'Fallback M3U riuscito' : 'Errore connessione'
+        }), true);
+
+        setNotice({
+          status: m3uOk ? 'ok' : 'error',
+          message: m3uOk
+            ? 'Modalità alternativa riuscita. AURA userà la lista compatibile.'
+            : 'Connessione Xtream non riuscita.'
+        });
+      } catch (fallbackError) {
+        updateSettings((current) => ({
+          ...current,
+          connectionStatus: 'Errore connessione'
+        }), true);
+        setNotice({ status: 'error', message: fallbackError.message || error.message || 'Errore connessione sorgente.' });
+      }
+    }
   }
 
   function saveSource() {
@@ -222,26 +294,66 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     setNotice({ status: 'ok', message: 'Sorgente salvata sul dispositivo.' });
   }
 
-  function updateList() {
+  async function updateList() {
     if (!sourceReady) {
       setNotice({ status: 'error', message: 'Inserisci e salva una sorgente prima di aggiornare la lista.' });
       return;
     }
 
-    const timestamp = new Date().toLocaleString('it-IT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (settings.sourceType !== 'Xtream' && settings.sourceType !== 'Lista con link') {
+      setNotice({ status: 'error', message: 'Per ora l’aggiornamento reale della lista è attivo su Xtream.' });
+      return;
+    }
 
-    updateSettings((current) => ({
-      ...current,
-      connectionStatus: 'Lista aggiornata',
-      lastUpdate: timestamp
-    }), true);
-    setNotice({ status: 'ok', message: 'Lista aggiornata. Il collegamento reale verrà inserito nella prossima fase.' });
+    try {
+      setNotice({ status: 'ok', message: 'Lettura canali Xtream in corso...' });
+      const streams = await xtreamRequest('get_live_streams', {}, getXtreamConfig(settings));
+      const total = Array.isArray(streams) ? streams.length : 0;
+
+      const timestamp = new Date().toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      updateSettings((current) => ({
+        ...current,
+        connectionStatus: 'Lista aggiornata',
+        lastUpdate: timestamp
+      }), true);
+
+      setNotice({ status: 'ok', message: `Lista Live TV letta correttamente: ${total} canali trovati.` });
+    } catch (error) {
+      try {
+        setNotice({ status: 'ok', message: 'API canali non disponibile. Provo lista M3U...' });
+        const m3uText = await xtreamM3uRequest('mpegts', getXtreamConfig(settings));
+        const total = String(m3uText || '').split('#EXTINF').length - 1;
+
+        const timestamp = new Date().toLocaleString('it-IT', {
+          day: '2-digit',
+          month: '2-digit',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        updateSettings((current) => ({
+          ...current,
+          connectionStatus: 'Lista M3U aggiornata',
+          lastUpdate: timestamp
+        }), true);
+
+        setNotice({ status: 'ok', message: `Fallback M3U riuscito: ${Math.max(total, 0)} elementi trovati.` });
+      } catch (fallbackError) {
+        updateSettings((current) => ({
+          ...current,
+          connectionStatus: 'Errore lista'
+        }), true);
+        setNotice({ status: 'error', message: fallbackError.message || error.message || 'Errore aggiornamento lista.' });
+      }
+    }
   }
 
   function clearSource() {
@@ -344,7 +456,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                   description="Inserisci la sorgente che AURA userà per caricare canali, film, serie e sport."
                 >
                   <div className="source-type-grid">
-                    {['Xtream', 'M3U', 'Stalker'].map((source) => (
+                    {['Lista con link', 'Xtream', 'M3U', 'Stalker'].map((source) => (
                       <button
                         key={source}
                         type="button"
@@ -356,13 +468,24 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                     ))}
                   </div>
 
-                  {settings.sourceType === 'Xtream' ? (
+                  {(settings.sourceType === 'Xtream' || settings.sourceType === 'Lista con link') ? (
                     <div className="settings-form-grid source-form-spaced">
+                      {settings.sourceType === 'Lista con link' ? (
+                        <Field
+                          label="Nome lista"
+                          value={settings.xtream.listName || ''}
+                          placeholder="Es. Lista principale"
+                          onChange={(value) => updateSourceField('xtream', 'listName', value)}
+                        />
+                      ) : null}
                       <Field
-                        label="URL server"
-                        value={settings.xtream.serverUrl}
+                        label={settings.sourceType === 'Lista con link' ? 'Link' : 'URL server'}
+                        value={settings.xtream.linkUrl || settings.xtream.serverUrl}
                         placeholder="https://server.example.com"
-                        onChange={(value) => updateSourceField('xtream', 'serverUrl', value)}
+                        onChange={(value) => {
+                          updateSourceField('xtream', 'linkUrl', value);
+                          updateSourceField('xtream', 'serverUrl', value);
+                        }}
                       />
                       <Field
                         label="Username"
@@ -376,6 +499,12 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                         type="password"
                         placeholder="Inserisci password"
                         onChange={(value) => updateSourceField('xtream', 'password', value)}
+                      />
+                      <ChoiceRow
+                        title="Compatibilità"
+                        choices={['Auto', 'Standard', 'Alta', 'Diretta', 'Web']}
+                        active={settings.xtream.clientMode || 'Auto'}
+                        onChange={(value) => updateSourceField('xtream', 'clientMode', value)}
                       />
                       <Field
                         label="Stato connessione"

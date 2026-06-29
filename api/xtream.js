@@ -1,6 +1,3 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
 const CLIENT_PROFILES = {
   Auto: [
     {
@@ -329,22 +326,4 @@ async function xtreamProxy(req, res) {
   }
 }
 
-
-
-function sourceDevProxy() {
-  return {
-    name: 'aura-source-dev-proxy',
-    configureServer(server) {
-      server.middlewares.use('/api/xtream', async (req, res) => {
-        return xtreamProxy(req, res);
-      });
-    }
-  };
-}
-
-export default defineConfig({
-  plugins: [react(), sourceDevProxy()],
-  server: {
-    host: '0.0.0.0'
-  }
-});
+export default xtreamProxy;

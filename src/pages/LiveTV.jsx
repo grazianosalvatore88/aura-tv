@@ -5,10 +5,29 @@ import ChannelLogo from '../components/ChannelLogo.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import PlayerScreen from '../components/PlayerScreen.jsx';
 import { guideRows, liveCategories, liveChannels } from '../data/liveChannels.js';
+import { getXtreamConfig, loadAuraSettings } from '../services/xtreamService.js';
+import { loadXtreamLiveLibrary } from '../services/auraEngine.js';
 
-const initialFavoriteIds = liveChannels
-  .filter((item) => item.favorite)
-  .map((item) => item.id);
+const FAVORITES_KEY = 'aura-live-favorites';
+
+function loadFavoriteIds() {
+  try {
+    const stored = localStorage.getItem(FAVORITES_KEY);
+    if (stored) return new Set(JSON.parse(stored));
+  } catch {
+    // fallback below
+  }
+
+  return new Set(liveChannels.filter((item) => item.favorite).map((item) => item.id));
+}
+
+function saveFavoriteIds(favoriteIds) {
+  try {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favoriteIds)));
+  } catch {
+    // localStorage may be unavailable in some embedded browsers
+  }
+}
 
 function GridIcon() {
   return (
@@ -33,23 +52,99 @@ function QualityIcon() {
 export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }) {
   const [activeCategory, setActiveCategory] = useState('Tutti');
   const [selectedChannel, setSelectedChannel] = useState(liveChannels[0]);
-  const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
+  const [favoriteIds, setFavoriteIds] = useState(loadFavoriteIds);
   const [searchQuery, setSearchQuery] = useState('');
   const [showGuide, setShowGuide] = useState(true);
   const [showCategories, setShowCategories] = useState(true);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [playerChannel, setPlayerChannel] = useState(null);
-  const [resolutionMap, setResolutionMap] = useState(() => Object.fromEntries(
-    liveChannels.map((item) => [item.id, item.qualityLabel || item.resolutions?.[0] || 'HD'])
-  ));
+  const [resolutionMap, setResolutionMap] = useState({});
+  const [library, setLibrary] = useState({
+    mode: 'demo',
+    channels: liveChannels,
+    categories: liveCategories,
+    stats: null
+  });
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [libraryError, setLibraryError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLibrary() {
+      const settings = loadAuraSettings();
+      const config = getXtreamConfig(settings);
+
+      if (!config) {
+        setLibrary({
+          mode: 'demo',
+          channels: liveChannels,
+          categories: liveCategories,
+          stats: null
+        });
+        setLibraryError('');
+        setSelectedChannel(liveChannels[0]);
+        return;
+      }
+
+      try {
+        setLoadingLibrary(true);
+        setLibraryError('');
+
+        const result = await loadXtreamLiveLibrary(settings);
+
+        if (cancelled) return;
+
+        if (result.channels.length) {
+          setLibrary(result);
+          setSelectedChannel(result.channels[0]);
+          setActiveCategory('Tutti');
+          setResolutionMap(Object.fromEntries(
+            result.channels.map((item) => [item.id, item.selectedResolution || item.qualityLabel || 'HD'])
+          ));
+        } else {
+          setLibrary({
+            mode: 'demo',
+            channels: liveChannels,
+            categories: liveCategories,
+            stats: null
+          });
+          setSelectedChannel(liveChannels[0]);
+          setLibraryError('Lista letta ma nessun canale Live TV trovato.');
+        }
+      } catch (error) {
+        if (cancelled) return;
+
+        setLibrary({
+          mode: 'demo',
+          channels: liveChannels,
+          categories: liveCategories,
+          stats: null
+        });
+        setSelectedChannel(liveChannels[0]);
+        setLibraryError(error.message || 'Errore caricamento lista. Sto mostrando i dati demo.');
+      } finally {
+        if (!cancelled) setLoadingLibrary(false);
+      }
+    }
+
+    loadLibrary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const allChannels = library.channels?.length ? library.channels : liveChannels;
+  const allCategories = library.categories?.length ? library.categories : liveCategories;
 
   const channelsWithFavorites = useMemo(() => (
-    liveChannels.map((item) => ({
+    allChannels.map((item) => ({
       ...item,
       favorite: favoriteIds.has(item.id),
-      selectedResolution: resolutionMap[item.id] || item.qualityLabel || item.resolutions?.[0] || 'HD',
+      selectedResolution: resolutionMap[item.id] || item.selectedResolution || item.qualityLabel || item.resolutions?.[0] || 'HD'
     }))
-  ), [favoriteIds, resolutionMap]);
+  ), [allChannels, favoriteIds, resolutionMap]);
 
   const filteredChannels = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -61,7 +156,16 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
           ? item.favorite
           : item.category === activeCategory;
 
-      const searchMatch = !query || [item.channel, item.title, item.subtitle, item.category]
+      const searchMatch = !query || [
+        item.channel,
+        item.rawName,
+        item.title,
+        item.subtitle,
+        item.category,
+        item.originalCategory,
+        item.qualityLabel
+      ]
+        .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(query);
@@ -72,7 +176,9 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
 
   useEffect(() => {
     if (!filteredChannels.length) return;
+
     const stillVisible = filteredChannels.find((item) => item.id === selectedChannel?.id);
+
     if (!stillVisible) {
       setSelectedChannel(filteredChannels[0]);
     }
@@ -81,13 +187,15 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
   const visibleChannel = filteredChannels.find((item) => item.id === selectedChannel?.id)
     || filteredChannels[0]
     || channelsWithFavorites[0]
-    || selectedChannel;
+    || liveChannels[0];
 
   const isFavorite = favoriteIds.has(visibleChannel.id);
 
   function selectCategory(category) {
     setActiveCategory(category);
     setShowCategories(true);
+
+    const query = searchQuery.trim().toLowerCase();
     const next = channelsWithFavorites.find((item) => {
       const categoryMatch = category === 'Tutti'
         ? true
@@ -95,50 +203,65 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
           ? item.favorite
           : item.category === category;
 
-      const query = searchQuery.trim().toLowerCase();
-      const searchMatch = !query || [item.channel, item.title, item.subtitle, item.category]
+      const searchMatch = !query || [item.channel, item.rawName, item.title, item.subtitle, item.category]
+        .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(query);
 
       return categoryMatch && searchMatch;
     });
+
     if (next) setSelectedChannel(next);
   }
 
   function toggleFavorite(channelId) {
     setFavoriteIds((current) => {
       const updated = new Set(current);
+
       if (updated.has(channelId)) {
         updated.delete(channelId);
       } else {
         updated.add(channelId);
       }
+
+      saveFavoriteIds(updated);
       return updated;
     });
   }
 
   function cycleResolution(channelId) {
     setResolutionMap((current) => {
-      const channel = liveChannels.find((item) => item.id === channelId);
+      const channel = allChannels.find((item) => item.id === channelId);
       if (!channel?.resolutions?.length) return current;
+
       const options = channel.resolutions;
-      const currentValue = current[channelId] || channel.qualityLabel || options[0];
-      const currentIndex = options.indexOf(currentValue);
+      const currentValue = current[channelId] || channel.selectedResolution || channel.qualityLabel || options[0];
+      const currentIndex = Math.max(0, options.indexOf(currentValue));
       const nextValue = options[(currentIndex + 1) % options.length];
+
       return {
         ...current,
-        [channelId]: nextValue,
+        [channelId]: nextValue
       };
     });
   }
 
   function channelDirection(step) {
     if (!filteredChannels.length) return;
+
     const currentIndex = filteredChannels.findIndex((item) => item.id === visibleChannel.id);
     const safeIndex = currentIndex === -1 ? 0 : currentIndex;
     const nextIndex = (safeIndex + step + filteredChannels.length) % filteredChannels.length;
+
     setSelectedChannel(filteredChannels[nextIndex]);
+  }
+
+  function openPlayer(channel) {
+    setPlayerChannel({
+      ...channel,
+      favorite: favoriteIds.has(channel.id)
+    });
   }
 
   if (playerChannel) {
@@ -170,9 +293,34 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
           placeholder="Cerca canali live, programmi, categorie..."
         />
 
+        <div className={(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'aura-engine-status glass-panel active' : 'aura-engine-status glass-panel'}>
+          <div>
+            <span className="eyebrow">{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'Motore AURA Live' : 'Modalità demo'}</span>
+            <strong>
+              {loadingLibrary
+                ? 'Caricamento lista...'
+                : (library.mode === 'xtream-api' || library.mode === 'xtream-m3u')
+                  ? `${library.stats?.visibleCount || channelsWithFavorites.length} canali ordinati`
+                  : 'Configura una sorgente nelle impostazioni per caricare la lista reale'}
+            </strong>
+            <small>
+              {(library.mode === 'xtream-api' || library.mode === 'xtream-m3u')
+                ? `${library.stats?.duplicateCount || 0} doppioni uniti · ${library.stats?.categories || 0} categorie${library.stats?.fallbackUsed ? ' · fallback M3U' : ''}`
+                : libraryError || 'Dati demo attivi'}
+            </small>
+          </div>
+          <button type="button" onClick={() => onNavigate('Impostazioni')}>Sorgente TV</button>
+        </div>
+
+        {libraryError ? (
+          <div className="aura-live-error glass-panel">
+            {libraryError}
+          </div>
+        ) : null}
+
         {showCategories ? (
           <div className="live-tabs" role="tablist" aria-label="Categorie Live TV">
-            {liveCategories.map((category) => (
+            {allCategories.map((category) => (
               <button
                 key={category}
                 type="button"
@@ -222,7 +370,7 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
                   onMouseEnter={() => setSelectedChannel(item)}
                 >
                   <span className="channel-number">{item.number}</span>
-                  <ChannelLogo text={item.logo} />
+                  {item.icon ? <img src={item.icon} alt="" className="channel-logo-image" /> : <ChannelLogo text={item.logo} />}
                   <span className="channel-row-copy">
                     <strong>{item.channel}</strong>
                     <small>{item.title}</small>
@@ -247,9 +395,9 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
             <div className="live-preview-content">
               <div className="live-preview-top">
                 <div className="preview-brand-row">
-                  <ChannelLogo text={visibleChannel.logo} />
+                  {visibleChannel.icon ? <img src={visibleChannel.icon} alt="" className="preview-channel-image" /> : <ChannelLogo text={visibleChannel.logo} />}
                   <div className="preview-channel-meta">
-                    <span className="live-badge">LIVE</span>
+                    <span className="live-badge">{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'AURA' : 'LIVE'}</span>
                     <strong>{visibleChannel.channel}</strong>
                     <small>{visibleChannel.selectedResolution}</small>
                   </div>
@@ -267,7 +415,7 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
               </div>
 
               <div className="live-now-copy">
-                <span>Ora in onda · {visibleChannel.time}</span>
+                <span>{visibleChannel.category} · {visibleChannel.time}</span>
                 <h2>{visibleChannel.title}</h2>
                 <h3>{visibleChannel.subtitle}</h3>
                 <p>{visibleChannel.description}</p>
@@ -277,20 +425,20 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
               {showInfoPanel ? (
                 <div className="info-panel glass-control">
                   <div>
-                    <span className="eyebrow">Info programma</span>
-                    <strong>{visibleChannel.title}</strong>
-                    <p>{visibleChannel.description}</p>
+                    <span className="eyebrow">Info canale</span>
+                    <strong>{visibleChannel.channel}</strong>
+                    <p>{visibleChannel.auraEngine?.originalName || visibleChannel.description}</p>
                   </div>
                   <div className="info-panel-meta">
                     <span>{visibleChannel.category}</span>
                     <span>{visibleChannel.selectedResolution}</span>
-                    <span>{visibleChannel.time}</span>
+                    <span>{visibleChannel.source || 'Demo'}</span>
                   </div>
                 </div>
               ) : null}
 
               <div className="live-actions">
-                <button type="button" className="primary" onClick={() => setPlayerChannel(visibleChannel)}>▶ Guarda canale</button>
+                <button type="button" className="primary" onClick={() => openPlayer(visibleChannel)}>▶ Guarda canale</button>
                 <button className="round-action text-action" aria-label="Informazioni programma" onClick={() => setShowInfoPanel((current) => !current)}>
                   Info
                 </button>
@@ -318,38 +466,47 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
             <div className="guide-heading">
               <div>
                 <span className="eyebrow">EPG</span>
-                <h2>Guida TV</h2>
+                <h2>{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? 'Guida TV base' : 'Guida TV'}</h2>
               </div>
               <button type="button">Oggi ▾</button>
             </div>
 
-            <div className="time-rail">
-              <span>21:30</span>
-              <span>22:00</span>
-              <span>22:30</span>
-              <span>23:00</span>
-              <span>23:30</span>
-              <span>00:00</span>
-            </div>
-
-            <div className="guide-grid">
-              {guideRows.map((row) => (
-                <div className="guide-row" key={row.channel}>
-                  <div className="guide-channel-name">
-                    <ChannelLogo text={row.logo} />
-                    <strong>{row.channel}</strong>
-                  </div>
-                  <div className="guide-programs">
-                    {row.programs.map((program) => (
-                      <button key={program.title} type="button" className={program.active ? 'active' : ''}>
-                        <strong>{program.title}</strong>
-                        <span>{program.time}</span>
-                      </button>
-                    ))}
-                  </div>
+            {(library.mode === 'xtream-api' || library.mode === 'xtream-m3u') ? (
+              <div className="aura-guide-placeholder">
+                <strong>EPG reale nella prossima fase.</strong>
+                <span>Per ora AURA carica canali, categorie, qualità, duplicati e stream live.</span>
+              </div>
+            ) : (
+              <>
+                <div className="time-rail">
+                  <span>21:30</span>
+                  <span>22:00</span>
+                  <span>22:30</span>
+                  <span>23:00</span>
+                  <span>23:30</span>
+                  <span>00:00</span>
                 </div>
-              ))}
-            </div>
+
+                <div className="guide-grid">
+                  {guideRows.map((row) => (
+                    <div className="guide-row" key={row.channel}>
+                      <div className="guide-channel-name">
+                        <ChannelLogo text={row.logo} />
+                        <strong>{row.channel}</strong>
+                      </div>
+                      <div className="guide-programs">
+                        {row.programs.map((program) => (
+                          <button key={program.title} type="button" className={program.active ? 'active' : ''}>
+                            <strong>{program.title}</strong>
+                            <span>{program.time}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </section>
         ) : null}
 

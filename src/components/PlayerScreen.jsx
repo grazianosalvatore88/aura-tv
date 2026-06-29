@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import ChannelLogo from './ChannelLogo.jsx';
 import ProgressBar from './ProgressBar.jsx';
+import StreamVideo from './StreamVideo.jsx';
 
 function SpeakerIcon({ muted = false }) {
   return (
@@ -121,6 +122,7 @@ export default function PlayerScreen({
   const [qualityPanelOpen, setQualityPanelOpen] = useState(false);
   const [pipActive, setPipActive] = useState(false);
   const [fullscreenActive, setFullscreenActive] = useState(false);
+  const [streamStatus, setStreamStatus] = useState('');
 
   const isLive = mode === 'live';
   const media = item || channel || {};
@@ -156,13 +158,22 @@ export default function PlayerScreen({
 
   return (
     <div className={isLive ? 'aura-player live-player' : 'aura-player vod-player'}>
-      <div className="player-video-layer" style={{ '--player-bg': `url(${background})` }} />
+      <div className="player-video-layer" style={{ '--player-bg': `url(${background})` }}>
+        <StreamVideo
+          src={media.streamUrl}
+          fallbackSrc={media.fallbackStreamUrl}
+          poster={media.icon || media.poster || background}
+          muted={muted}
+          paused={paused}
+          onStatusChange={setStreamStatus}
+        />
+      </div>
       <div className="player-vignette" />
 
       <section className="player-top-title">
         <span>{isLive ? 'Live TV' : type === 'series' ? 'Serie TV' : 'Film'}</span>
         <h1>{title}</h1>
-        <p>{topSubtitle}</p>
+        <p>{topSubtitle}{streamStatus ? ` · ${streamStatus}` : ''}</p>
       </section>
 
       <div className="player-top-actions">

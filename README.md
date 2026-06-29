@@ -1,19 +1,17 @@
-# AURA TV v2.9
+# AURA TV v2.10
 
 AURA TV è un prototipo React/Vite di interfaccia TV premium.
 
-## Novità v2.9
+## Novità v2.10
 
-- Correzione definitiva pagina **Live TV**.
-- Sistemato errore che poteva causare schermata nera entrando in Live TV.
-- Player: tasto **BACK** spostato in alto a sinistra, allineato alle icone in alto a destra.
-- Titolo contenuto nel player posizionato sotto al tasto BACK con più respiro.
-- Icona impostazioni del player semplificata e resa più pulita.
-- Scheda comandi player ulteriormente abbassata e resa più compatta.
-- Play/pausa mantenuti centrati.
-- Pausa con due barre dritte uguali.
-- Audio con icona cassa speaker.
-- Tasti colorati coerenti con il resto dell’app.
+- Ultima rifinitura grafica prima dell'avvio del motore AURA.
+- Nella Home, le sezioni:
+  - Film più visti;
+  - Serie TV più viste;
+  ora usano le stesse icone della sidebar.
+- Creata icona condivisa `SidebarIcon.jsx` per mantenere coerenza grafica.
+- Sidebar aggiornata per usare le stesse icone condivise.
+- Rimossi gli emoji dai titoli dei caroselli Film/Serie.
 
 ## Pagine presenti
 
@@ -60,6 +58,10 @@ Dopo aver sostituito i file nel repository:
 ```bash
 npm install
 git add .
-git commit -m "Fix Live TV e player Aura v2.9"
+git commit -m "Rifinitura icone Home Aura v2.10"
 git push
 ```
+
+## Prossimo passo consigliato
+
+Dalla prossima fase si può iniziare con il collegamento reale Xtream e con il primo motore AURA sui canali Live TV.

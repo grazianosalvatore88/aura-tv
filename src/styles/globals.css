@@ -5663,3 +5663,16 @@ button { font: inherit; }
     right: 18px !important;
   }
 }
+
+
+/* v2.10 Home carousel titles: sidebar icons */
+.carousel-title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.carousel-title-with-icon svg {
+  color: currentColor;
+  flex: 0 0 auto;
+}

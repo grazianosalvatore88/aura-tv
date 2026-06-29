@@ -7,6 +7,7 @@ import Carousel from '../components/Carousel.jsx';
 import ChannelCard from '../components/ChannelCard.jsx';
 import MovieCard from '../components/MovieCard.jsx';
 import ContinueCard from '../components/ContinueCard.jsx';
+import SidebarIcon from '../components/SidebarIcon.jsx';
 import { channels } from '../data/channels.js';
 import { movies } from '../data/movies.js';
 import { series } from '../data/series.js';
@@ -53,11 +54,11 @@ export default function Home({ activePage = 'Home', onNavigate = () => {} }) {
           ))}
         </Carousel>
 
-        <Carousel title="🎬 Film più visti" action={null} className="poster-carousel">
+        <Carousel title={<span className="carousel-title-with-icon"><SidebarIcon name="film" size={24} /> Film più visti</span>} action={null} className="poster-carousel">
           {movies.map((item) => <MovieCard key={item.title} item={item} />)}
         </Carousel>
 
-        <Carousel title="📺 Serie TV più viste" action={null} className="poster-carousel bottom-spacer">
+        <Carousel title={<span className="carousel-title-with-icon"><SidebarIcon name="series" size={24} /> Serie TV più viste</span>} action={null} className="poster-carousel bottom-spacer">
           {series.map((item) => <MovieCard key={item.title} item={item} />)}
         </Carousel>
       </main>

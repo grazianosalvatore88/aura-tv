@@ -23,7 +23,9 @@ export default function Home({ activePage = 'Home', onNavigate = () => {} }) {
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
       <main className="app-main">
-        <TopMenu />
+        <TopMenu 
+          onNavigate={onNavigate}
+        />
 
         <div className="hero-grid">
           <Hero item={selectedChannel} />

@@ -148,6 +148,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Cerca film, attori, generi, qualità..."
+          onNavigate={onNavigate}
         />
 
         <section className="movies-hero glass-panel" style={{ '--movie-bg': `url(${visibleMovie.backdrop})` }}>

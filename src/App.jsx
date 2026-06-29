@@ -5,6 +5,8 @@ import Movies from './pages/Movies.jsx';
 import SeriesTV from './pages/SeriesTV.jsx';
 import Favorites from './pages/Favorites.jsx';
 import Resume from './pages/Resume.jsx';
+import Sport from './pages/Sport.jsx';
+import Settings from './pages/Settings.jsx';
 import PlaceholderPage from './pages/PlaceholderPage.jsx';
 
 export default function App() {
@@ -28,6 +30,14 @@ export default function App() {
 
   if (activePage === 'Riprendi') {
     return <Resume activePage={activePage} onNavigate={setActivePage} />;
+  }
+
+  if (activePage === 'Sport') {
+    return <Sport activePage={activePage} onNavigate={setActivePage} />;
+  }
+
+  if (activePage === 'Impostazioni') {
+    return <Settings activePage={activePage} onNavigate={setActivePage} />;
   }
 
   if (activePage !== 'Home') {

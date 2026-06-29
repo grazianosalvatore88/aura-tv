@@ -184,6 +184,7 @@ export default function Resume({ activePage = 'Riprendi', onNavigate = () => {} 
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Cerca tra film e serie iniziati..."
+          onNavigate={onNavigate}
         />
 
         <header className="clean-page-header">

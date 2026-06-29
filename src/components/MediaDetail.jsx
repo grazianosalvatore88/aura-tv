@@ -72,7 +72,9 @@ export default function MediaDetail({
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
       <main className="app-main media-detail-page">
-        <TopMenu placeholder={isSeries ? 'Cerca serie TV, cast, stagioni, generi...' : 'Cerca film, attori, generi, qualità...'} />
+        <TopMenu placeholder={isSeries ? 'Cerca serie TV, cast, stagioni, generi...' : 'Cerca film, attori, generi, qualità...'}
+          onNavigate={onNavigate}
+        />
 
         <button type="button" className="detail-back-button glass-control" onClick={onBack}>
           <BackIcon />

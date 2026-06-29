@@ -147,7 +147,9 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
       <main className="app-main live-page">
-        <TopMenu />
+        <TopMenu 
+          onNavigate={onNavigate}
+        />
 
         {showCategories ? (
           <div className="live-tabs" role="tablist" aria-label="Categorie Live TV">

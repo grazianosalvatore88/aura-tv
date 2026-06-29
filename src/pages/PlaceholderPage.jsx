@@ -8,7 +8,9 @@ export default function PlaceholderPage({ activePage, onNavigate }) {
       <div className="ambient ambient-two" />
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
       <main className="app-main">
-        <TopMenu />
+        <TopMenu 
+          onNavigate={onNavigate}
+        />
         <section className="placeholder-page glass-panel">
           <span className="eyebrow">In costruzione</span>
           <h1>{activePage}</h1>

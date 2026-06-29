@@ -1,6 +1,7 @@
 export default function TopMenu({
   searchValue,
   onSearchChange,
+  onNavigate = () => {},
   placeholder = 'Cerca film, serie, canali, eventi sportivi...'
 }) {
   const controlledProps = typeof searchValue === 'string'
@@ -26,8 +27,15 @@ export default function TopMenu({
       </div>
 
       <div className="top-actions">
-        <button className="clock glass-control">21:45</button>
-        <button className="settings glass-control" aria-label="Impostazioni">⚙</button>
+        <button type="button" className="clock glass-control">21:45</button>
+        <button
+          type="button"
+          className="settings glass-control"
+          aria-label="Impostazioni"
+          onClick={() => onNavigate('Impostazioni')}
+        >
+          ⚙
+        </button>
       </div>
     </header>
   );

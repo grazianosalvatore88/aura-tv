@@ -1,20 +1,26 @@
-# AURA TV v2.3
+# AURA TV v2.5
 
 AURA TV è un prototipo React/Vite di interfaccia TV premium.
 
-## Novità v2.3
+## Novità v2.5
 
-- Correzione definitiva pagine **Preferiti** e **Riprendi**.
-- Rimossa completamente la hero da **Preferiti**.
-- Rimossa completamente la hero da **Riprendi**.
-- Preferiti e Riprendi ora partono direttamente con titolo, filtri e contenuti.
-- Card dei canali preferiti rese più compatte.
-- Griglia canali preferiti impostata per mostrare fino a 6 canali per riga su desktop.
-- Rimosso il vecchio quadrato rosso con cuore.
-- Nuovo cuore rosa piccolo e pulito sui canali preferiti.
-- Sostituzione delle icone Info poco nitide con testo **Info**.
-- Aggiornate le legende telecomando con testo **Info** dove necessario.
-- Pulizia classi e override CSS per evitare che vecchie hero o vecchie card vengano mostrate.
+- Pulizia pagina **Sport**:
+  - rimossi testi esplicativi visibili sul riconoscimento automatico;
+  - rimosso il pannello “Info riconoscimento”;
+  - rimosso il filtro “Prossimamente”;
+  - rimosse le sezioni e le card “Prossimamente”;
+  - sezione **Live ora** con logo canale a sinistra;
+  - sezione **Canali sportivi** senza percentuali o dettagli tecnici.
+- Aggiunta pagina **Impostazioni**.
+- Il tasto impostazioni nella topbar apre la pagina Impostazioni da qualsiasi pagina.
+- Blocchi impostazioni:
+  - Sorgente TV;
+  - Player;
+  - Aspetto;
+  - Premium;
+  - Privacy;
+  - Sistema.
+- Legenda telecomando nella pagina Impostazioni.
 
 ## Pagine presenti
 
@@ -25,6 +31,7 @@ AURA TV è un prototipo React/Vite di interfaccia TV premium.
 - Serie TV
 - Sport
 - Riprendi
+- Impostazioni
 
 ## Comandi
 
@@ -55,13 +62,11 @@ Il pacchetto è pulito e non contiene:
 - .git
 - .DS_Store
 
-Dopo aver sostituito i file nel repository, eseguire:
+Dopo aver sostituito i file nel repository:
 
 ```bash
 npm install
 git add .
-git commit -m "Fix definitivo Preferiti e Riprendi Aura v2.3"
+git commit -m "Aggiunta Impostazioni e pulizia Sport Aura v2.5"
 git push
 ```
-
-Se il browser mostra ancora la vecchia interfaccia, effettuare un refresh forzato o attendere il nuovo deploy Vercel.

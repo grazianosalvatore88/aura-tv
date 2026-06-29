@@ -148,6 +148,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Cerca serie TV, cast, stagioni, generi..."
+          onNavigate={onNavigate}
         />
 
         <section className="movies-hero glass-panel" style={{ '--movie-bg': `url(${visibleSeries.backdrop})` }}>

@@ -195,6 +195,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Cerca nei preferiti..."
+          onNavigate={onNavigate}
         />
 
         <header className="clean-page-header">

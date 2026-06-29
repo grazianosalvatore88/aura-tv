@@ -1,11 +1,10 @@
-# AURA TV v1.5
+# AURA TV v1.6
 
-Aggiornamento:
-- pagina Live TV programmata;
-- navigazione sidebar attiva;
-- lista canali con selezione dinamica;
-- preview programma in onda;
-- categorie Live TV;
-- guida TV / EPG mock;
-- barra telecomando con CH+ / CH-;
-- placeholder coerenti per le altre pagine.
+Aggiornamento Live TV:
+
+- barra comandi telecomando più ariosa e leggibile;
+- contenitori separati per ogni comando;
+- tasti colorati stile telecomando TV;
+- tasto rosso per aggiungere/rimuovere il canale dai preferiti;
+- cuore preferiti aggiornabile nella pagina Live TV;
+- pulsante preferiti nella preview canale.

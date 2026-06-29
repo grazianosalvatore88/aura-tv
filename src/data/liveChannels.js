@@ -15,12 +15,15 @@ export const liveChannels = [
   {
     id: 'rai-1-live',
     number: 1,
-    logo: 'RAI 1\nHD',
+    logo: `RAI 1
+HD`,
     channel: 'Rai 1 HD',
     title: 'Il Commissario Montalbano',
     subtitle: 'Stagione 14 · Episodio 2',
     time: '21:20 - 23:40',
     category: 'Generalisti',
+    qualityLabel: 'HD',
+    resolutions: ['SD', 'HD', 'FHD'],
     favorite: true,
     progress: 48,
     description: 'Montalbano indaga su un misterioso omicidio in una villa di campagna. Tra segreti e bugie, la verità è più vicina di quanto sembri.',
@@ -29,12 +32,15 @@ export const liveChannels = [
   {
     id: 'rai-2-live',
     number: 2,
-    logo: 'RAI 2\nHD',
+    logo: `RAI 2
+HD`,
     channel: 'Rai 2 HD',
     title: 'Stasera tutto è possibile',
     subtitle: 'Intrattenimento',
     time: '21:20 - 23:35',
     category: 'Generalisti',
+    qualityLabel: 'HD',
+    resolutions: ['SD', 'HD'],
     favorite: false,
     progress: 42,
     description: 'Una serata di giochi, ospiti e improvvisazione con una formula leggera e adatta a tutta la famiglia.',
@@ -43,12 +49,15 @@ export const liveChannels = [
   {
     id: 'rai-3-live',
     number: 3,
-    logo: 'RAI 3\nHD',
+    logo: `RAI 3
+HD`,
     channel: 'Rai 3 HD',
     title: 'Report',
     subtitle: 'Approfondimento',
     time: '21:20 - 23:20',
     category: 'News',
+    qualityLabel: 'HD',
+    resolutions: ['HD', 'FHD'],
     favorite: false,
     progress: 40,
     description: 'Inchieste, reportage e approfondimenti sui principali temi di attualità nazionale e internazionale.',
@@ -57,12 +66,15 @@ export const liveChannels = [
   {
     id: 'canale-5-live',
     number: 4,
-    logo: '5\nHD',
+    logo: `5
+HD`,
     channel: 'Canale 5 HD',
     title: 'Striscia la notizia',
     subtitle: 'La voce dell’influenza',
     time: '21:20 - 22:30',
     category: 'Generalisti',
+    qualityLabel: 'FHD',
+    resolutions: ['HD', 'FHD'],
     favorite: true,
     progress: 38,
     description: 'Satira, attualità e servizi dal territorio nel programma storico dell’access prime time italiano.',
@@ -71,12 +83,15 @@ export const liveChannels = [
   {
     id: 'italia-1-live',
     number: 5,
-    logo: 'ITA\n1',
+    logo: `ITA
+1`,
     channel: 'Italia 1',
     title: 'NCIS - Unità anticrimine',
     subtitle: 'Serie TV',
     time: '21:15 - 22:10',
     category: 'Generalisti',
+    qualityLabel: 'HD',
+    resolutions: ['SD', 'HD'],
     favorite: false,
     progress: 61,
     description: 'Una nuova indagine porta la squadra a seguire tracce difficili tra tecnologia, prove nascoste e colpi di scena.',
@@ -85,12 +100,15 @@ export const liveChannels = [
   {
     id: 'sky-sport-uno-live',
     number: 6,
-    logo: 'SKY\nSPORT UNO',
+    logo: `SKY
+SPORT UNO`,
     channel: 'Sky Sport Uno',
     title: 'Champions League',
     subtitle: 'Manchester City - Real Madrid',
     time: '21:00 - 23:00',
     category: 'Sport',
+    qualityLabel: '4K',
+    resolutions: ['HD', 'FHD', '4K'],
     favorite: true,
     progress: 67,
     description: 'Grande calcio europeo in diretta con una serata da non perdere e una sfida di altissimo livello.',
@@ -99,12 +117,15 @@ export const liveChannels = [
   {
     id: 'sky-cinema-live',
     number: 7,
-    logo: 'SKY\nCINEMA',
+    logo: `SKY
+CINEMA`,
     channel: 'Sky Cinema Uno',
     title: 'Oppenheimer',
     subtitle: 'Film · Drammatico',
     time: '21:15 - 00:05',
     category: 'Cinema',
+    qualityLabel: '4K',
+    resolutions: ['FHD', '4K'],
     favorite: false,
     progress: 28,
     description: 'Un grande film d’autore per una serata cinema premium, con atmosfere intense e immagini spettacolari.',
@@ -113,12 +134,15 @@ export const liveChannels = [
   {
     id: 'la7-live',
     number: 8,
-    logo: 'LA7\nHD',
+    logo: `LA7
+HD`,
     channel: 'La7 HD',
     title: 'DiMartedì',
     subtitle: 'Attualità',
     time: '21:15 - 23:15',
     category: 'News',
+    qualityLabel: 'HD',
+    resolutions: ['SD', 'HD'],
     favorite: false,
     progress: 52,
     description: 'Politica, attualità e approfondimenti con ospiti in studio e collegamenti dai luoghi della notizia.',
@@ -127,12 +151,15 @@ export const liveChannels = [
   {
     id: 'eurosport-live',
     number: 9,
-    logo: 'EURO\nSPORT',
+    logo: `EURO
+SPORT`,
     channel: 'Eurosport 1',
     title: 'Tennis ATP Roma',
     subtitle: 'Sport live',
     time: '20:30 - 23:00',
     category: 'Sport',
+    qualityLabel: 'FHD',
+    resolutions: ['HD', 'FHD'],
     favorite: true,
     progress: 72,
     description: 'Il grande tennis internazionale in diretta con i migliori match del torneo.',
@@ -141,12 +168,15 @@ export const liveChannels = [
   {
     id: 'discovery-live',
     number: 10,
-    logo: 'DISC\nHD',
+    logo: `DISC
+HD`,
     channel: 'Discovery Channel',
     title: 'Mega costruzioni',
     subtitle: 'Documentario',
     time: '21:00 - 22:00',
     category: 'Documentari',
+    qualityLabel: 'HD',
+    resolutions: ['SD', 'HD'],
     favorite: false,
     progress: 58,
     description: 'Viaggio dentro grandi opere di ingegneria, cantieri complessi e tecnologie estreme.',
@@ -157,7 +187,8 @@ export const liveChannels = [
 export const guideRows = [
   {
     channel: 'Rai 1 HD',
-    logo: 'RAI 1\nHD',
+    logo: `RAI 1
+HD`,
     programs: [
       { title: 'Il Commissario Montalbano', time: '21:20 - 23:40', active: true },
       { title: 'Porta a Porta', time: '23:40 - 00:55' },
@@ -166,7 +197,8 @@ export const guideRows = [
   },
   {
     channel: 'Rai 2 HD',
-    logo: 'RAI 2\nHD',
+    logo: `RAI 2
+HD`,
     programs: [
       { title: 'Stasera tutto è possibile', time: '21:20 - 23:35', active: true },
       { title: 'TG2 Post', time: '23:35 - 00:00' },
@@ -175,7 +207,8 @@ export const guideRows = [
   },
   {
     channel: 'Canale 5 HD',
-    logo: '5\nHD',
+    logo: `5
+HD`,
     programs: [
       { title: 'Striscia la notizia', time: '21:20 - 22:30', active: true },
       { title: 'Grande Fratello', time: '22:30 - 01:10' },
@@ -184,7 +217,8 @@ export const guideRows = [
   },
   {
     channel: 'Sky Sport Uno',
-    logo: 'SKY\nSPORT UNO',
+    logo: `SKY
+SPORT UNO`,
     programs: [
       { title: 'Champions League', time: '21:00 - 23:00', active: true },
       { title: 'Post partita', time: '23:00 - 00:30' },

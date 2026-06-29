@@ -1,4 +1,15 @@
-export default function TopMenu() {
+export default function TopMenu({
+  searchValue,
+  onSearchChange,
+  placeholder = 'Cerca film, serie, canali, eventi sportivi...'
+}) {
+  const controlledProps = typeof searchValue === 'string'
+    ? {
+        value: searchValue,
+        onChange: (event) => onSearchChange?.(event.target.value)
+      }
+    : {};
+
   return (
     <header className="topbar">
       <div className="search-shell glass-control" role="search">
@@ -6,7 +17,12 @@ export default function TopMenu() {
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-4.2-4.2" />
         </svg>
-        <input type="search" placeholder="Cerca film, serie, canali, eventi sportivi..." aria-label="Cerca" />
+        <input
+          type="search"
+          placeholder={placeholder}
+          aria-label="Cerca"
+          {...controlledProps}
+        />
       </div>
 
       <div className="top-actions">

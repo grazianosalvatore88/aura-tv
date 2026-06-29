@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Home from './pages/Home.jsx';
 import LiveTV from './pages/LiveTV.jsx';
+import Movies from './pages/Movies.jsx';
+import SeriesTV from './pages/SeriesTV.jsx';
 import PlaceholderPage from './pages/PlaceholderPage.jsx';
 
 export default function App() {
@@ -8,6 +10,14 @@ export default function App() {
 
   if (activePage === 'Live TV') {
     return <LiveTV activePage={activePage} onNavigate={setActivePage} />;
+  }
+
+  if (activePage === 'Film') {
+    return <Movies activePage={activePage} onNavigate={setActivePage} />;
+  }
+
+  if (activePage === 'Serie TV') {
+    return <SeriesTV activePage={activePage} onNavigate={setActivePage} />;
   }
 
   if (activePage !== 'Home') {

@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import MediaDetail from '../components/MediaDetail.jsx';
+import RemoteLegend from '../components/RemoteLegend.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { seriesFilters, series } from '../data/series.js';
 
@@ -275,6 +276,17 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           onSelect={setSelectedSeries}
           onOpen={openDetail}
           emptyText="Nessuna serie di fantascienza disponibile."
+        />
+
+        <RemoteLegend
+          commands={[
+            { key: 'OK', label: 'Apri scheda' },
+            { key: 'BACK', label: 'Indietro' },
+            { key: 'rosso', color: 'red', label: 'Preferito' },
+            { key: 'verde', color: 'green', label: 'Filtri' },
+            { key: 'giallo', color: 'yellow', label: 'Stagioni' },
+            { key: 'blu', color: 'blue', label: 'Qualità' }
+          ]}
         />
       </main>
     </div>

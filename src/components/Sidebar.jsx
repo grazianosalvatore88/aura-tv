@@ -2,10 +2,10 @@ const menuItems = [
   { label: 'Home', icon: 'home' },
   { label: 'Preferiti', icon: 'star' },
   { label: 'Live TV', icon: 'tv' },
-  { label: 'Continua a guardare', icon: 'play' },
   { label: 'Film', icon: 'film' },
   { label: 'Serie TV', icon: 'series' },
-  { label: 'Sport', icon: 'sport' }
+  { label: 'Sport', icon: 'sport' },
+  { label: 'Riprendi', icon: 'play' }
 ];
 
 function Icon({ name }) {

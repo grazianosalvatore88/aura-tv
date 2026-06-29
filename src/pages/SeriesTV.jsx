@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
+import MediaDetail from '../components/MediaDetail.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { seriesFilters, series } from '../data/series.js';
 
@@ -10,12 +11,12 @@ const initialFavoriteIds = series.filter((item) => item.favorite).map((item) => 
 export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {} }) {
   const [activeFilter, setActiveFilter] = useState('Tutte');
   const [selectedSeries, setSelectedSeries] = useState(series[0]);
+  const [detailSeries, setDetailSeries] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuality, setSelectedQuality] = useState(() => Object.fromEntries(
     series.map((item) => [item.id, item.quality])
   ));
-  const [showDetails, setShowDetails] = useState(false);
 
   const enrichedSeries = useMemo(() => series.map((item) => ({
     ...item,
@@ -58,7 +59,11 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
     || enrichedSeries[0]
     || selectedSeries;
 
-  const continueSeries = enrichedSeries.filter((item) => item.progress > 0);
+  const liveDetailSeries = detailSeries
+    ? enrichedSeries.find((item) => item.id === detailSeries.id) || detailSeries
+    : null;
+
+  const continueSeries = enrichedSeries.filter((item) => item.progress > 0).slice(0, 4);
   const newEpisodes = enrichedSeries.filter((item) => item.source === 'Nuovi episodi' || item.tag === 'Nuovi episodi');
   const fourKSeries = enrichedSeries.filter((item) => item.availableQualities.includes('4K'));
   const dramaSeries = enrichedSeries.filter((item) => item.genres.includes('Drammatico'));
@@ -103,6 +108,33 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
     });
   }
 
+  function openDetail(item) {
+    setSelectedSeries(item);
+    setDetailSeries(item);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (liveDetailSeries) {
+    const related = enrichedSeries.filter((item) => item.id !== liveDetailSeries.id && (
+      item.genres.some((genre) => liveDetailSeries.genres.includes(genre))
+      || item.availableQualities.includes(liveDetailSeries.selectedQuality)
+    ));
+
+    return (
+      <MediaDetail
+        activePage={activePage}
+        onNavigate={onNavigate}
+        item={liveDetailSeries}
+        type="series"
+        onBack={() => setDetailSeries(null)}
+        onToggleFavorite={toggleFavorite}
+        onCycleQuality={cycleQuality}
+        relatedItems={related}
+        onOpenRelated={openDetail}
+      />
+    );
+  }
+
   return (
     <div className="aura-app">
       <div className="ambient ambient-one" />
@@ -119,9 +151,13 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
 
         <section className="movies-hero glass-panel" style={{ '--movie-bg': `url(${visibleSeries.backdrop})` }}>
           <div className="movie-hero-content clean">
-            <div className="movie-poster-large" style={{ '--poster': `url(${visibleSeries.poster})` }}>
-              <span>{visibleSeries.selectedQuality}</span>
-            </div>
+            <button
+              type="button"
+              className="movie-poster-large poster-clickable"
+              style={{ '--poster': `url(${visibleSeries.poster})` }}
+              onClick={() => openDetail(visibleSeries)}
+              aria-label={`Apri scheda di ${visibleSeries.title}`}
+            />
 
             <div className="movie-hero-copy">
               <span className="eyebrow">Serie TV in evidenza</span>
@@ -154,8 +190,8 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
 
               <div className="movie-actions">
                 <button type="button" className="primary">▶ Guarda ora</button>
-                <button type="button" className="secondary" onClick={() => setShowDetails((current) => !current)}>
-                  Dettagli
+                <button type="button" className="secondary" onClick={() => openDetail(visibleSeries)}>
+                  Apri scheda
                 </button>
                 <button
                   type="button"
@@ -172,25 +208,6 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
             </div>
           </div>
         </section>
-
-        {showDetails ? (
-          <section className="movie-detail-panel glass-panel">
-            <div>
-              <span className="eyebrow">Scheda serie</span>
-              <h2>{visibleSeries.originalTitle}</h2>
-              <p>{visibleSeries.description}</p>
-            </div>
-            <div className="movie-detail-grid">
-              <span>Voto: ★ {visibleSeries.rating}</span>
-              <span>Stagioni: {visibleSeries.seasons}</span>
-              <span>Episodi: {visibleSeries.episodes}</span>
-              <span>Prossimo episodio: {visibleSeries.nextEpisode}</span>
-              <span>Creatori: {visibleSeries.creators}</span>
-              <span>Cast: {visibleSeries.cast.join(', ')}</span>
-              <span>Qualità disponibili: {visibleSeries.availableQualities.join(' / ')}</span>
-            </div>
-          </section>
-        ) : null}
 
         <div className="movie-filter-tabs visible" role="tablist" aria-label="Filtri serie TV">
           {seriesFilters.map((filter) => (
@@ -210,6 +227,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           items={filteredSeries}
           selectedItem={visibleSeries}
           onSelect={setSelectedSeries}
+          onOpen={openDetail}
           emptyText="Nessuna serie trovata con questi filtri."
         />
 
@@ -218,6 +236,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           items={continueSeries}
           selectedItem={visibleSeries}
           onSelect={setSelectedSeries}
+          onOpen={openDetail}
           emptyText="Qui appariranno gli episodi iniziati."
           type="series"
         />
@@ -227,6 +246,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           items={newEpisodes}
           selectedItem={visibleSeries}
           onSelect={setSelectedSeries}
+          onOpen={openDetail}
           emptyText="Nessun nuovo episodio disponibile."
         />
 
@@ -235,6 +255,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           items={fourKSeries}
           selectedItem={visibleSeries}
           onSelect={setSelectedSeries}
+          onOpen={openDetail}
           emptyText="Nessuna serie 4K disponibile."
         />
 
@@ -243,6 +264,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           items={dramaSeries}
           selectedItem={visibleSeries}
           onSelect={setSelectedSeries}
+          onOpen={openDetail}
           emptyText="Nessuna serie drammatica disponibile."
         />
 
@@ -251,6 +273,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
           items={sciFiSeries}
           selectedItem={visibleSeries}
           onSelect={setSelectedSeries}
+          onOpen={openDetail}
           emptyText="Nessuna serie di fantascienza disponibile."
         />
       </main>

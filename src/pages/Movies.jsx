@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
+import MediaDetail from '../components/MediaDetail.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { movieFilters, movies } from '../data/movies.js';
 
@@ -10,12 +11,12 @@ const initialFavoriteIds = movies.filter((movie) => movie.favorite).map((movie) 
 export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
   const [activeFilter, setActiveFilter] = useState('Tutti');
   const [selectedMovie, setSelectedMovie] = useState(movies[0]);
+  const [detailMovie, setDetailMovie] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuality, setSelectedQuality] = useState(() => Object.fromEntries(
     movies.map((movie) => [movie.id, movie.quality])
   ));
-  const [showDetails, setShowDetails] = useState(false);
 
   const enrichedMovies = useMemo(() => movies.map((movie) => ({
     ...movie,
@@ -58,7 +59,11 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
     || enrichedMovies[0]
     || selectedMovie;
 
-  const continueMovies = enrichedMovies.filter((movie) => movie.progress > 0);
+  const liveDetailMovie = detailMovie
+    ? enrichedMovies.find((movie) => movie.id === detailMovie.id) || detailMovie
+    : null;
+
+  const continueMovies = enrichedMovies.filter((movie) => movie.progress > 0).slice(0, 4);
   const newMovies = enrichedMovies.filter((movie) => movie.source === 'Nuovi arrivi' || movie.year === '2024');
   const fourKMovies = enrichedMovies.filter((movie) => movie.availableQualities.includes('4K'));
   const actionMovies = enrichedMovies.filter((movie) => movie.genres.includes('Azione'));
@@ -103,6 +108,33 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
     });
   }
 
+  function openDetail(movie) {
+    setSelectedMovie(movie);
+    setDetailMovie(movie);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (liveDetailMovie) {
+    const related = enrichedMovies.filter((movie) => movie.id !== liveDetailMovie.id && (
+      movie.genres.some((genre) => liveDetailMovie.genres.includes(genre))
+      || movie.availableQualities.includes(liveDetailMovie.selectedQuality)
+    ));
+
+    return (
+      <MediaDetail
+        activePage={activePage}
+        onNavigate={onNavigate}
+        item={liveDetailMovie}
+        type="film"
+        onBack={() => setDetailMovie(null)}
+        onToggleFavorite={toggleFavorite}
+        onCycleQuality={cycleQuality}
+        relatedItems={related}
+        onOpenRelated={openDetail}
+      />
+    );
+  }
+
   return (
     <div className="aura-app">
       <div className="ambient ambient-one" />
@@ -119,9 +151,13 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
 
         <section className="movies-hero glass-panel" style={{ '--movie-bg': `url(${visibleMovie.backdrop})` }}>
           <div className="movie-hero-content clean">
-            <div className="movie-poster-large" style={{ '--poster': `url(${visibleMovie.poster})` }}>
-              <span>{visibleMovie.selectedQuality}</span>
-            </div>
+            <button
+              type="button"
+              className="movie-poster-large poster-clickable"
+              style={{ '--poster': `url(${visibleMovie.poster})` }}
+              onClick={() => openDetail(visibleMovie)}
+              aria-label={`Apri scheda di ${visibleMovie.title}`}
+            />
 
             <div className="movie-hero-copy">
               <span className="eyebrow">Film in evidenza</span>
@@ -153,8 +189,8 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
 
               <div className="movie-actions">
                 <button type="button" className="primary">▶ Guarda ora</button>
-                <button type="button" className="secondary" onClick={() => setShowDetails((current) => !current)}>
-                  Dettagli
+                <button type="button" className="secondary" onClick={() => openDetail(visibleMovie)}>
+                  Apri scheda
                 </button>
                 <button
                   type="button"
@@ -171,23 +207,6 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
             </div>
           </div>
         </section>
-
-        {showDetails ? (
-          <section className="movie-detail-panel glass-panel">
-            <div>
-              <span className="eyebrow">Scheda film</span>
-              <h2>{visibleMovie.originalTitle}</h2>
-              <p>{visibleMovie.description}</p>
-            </div>
-            <div className="movie-detail-grid">
-              <span>Voto: ★ {visibleMovie.rating}</span>
-              <span>Regia: {visibleMovie.director}</span>
-              <span>Cast: {visibleMovie.cast.join(', ')}</span>
-              <span>Qualità disponibili: {visibleMovie.availableQualities.join(' / ')}</span>
-              <span>Sorgente: {visibleMovie.source}</span>
-            </div>
-          </section>
-        ) : null}
 
         <div className="movie-filter-tabs visible" role="tablist" aria-label="Filtri film">
           {movieFilters.map((filter) => (
@@ -207,6 +226,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           items={filteredMovies}
           selectedItem={visibleMovie}
           onSelect={setSelectedMovie}
+          onOpen={openDetail}
           emptyText="Nessun film trovato con questi filtri."
         />
 
@@ -215,6 +235,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           items={continueMovies}
           selectedItem={visibleMovie}
           onSelect={setSelectedMovie}
+          onOpen={openDetail}
           emptyText="Qui appariranno i film che inizi a guardare."
           type="film"
         />
@@ -224,6 +245,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           items={newMovies}
           selectedItem={visibleMovie}
           onSelect={setSelectedMovie}
+          onOpen={openDetail}
           emptyText="Nessun nuovo arrivo disponibile."
         />
 
@@ -232,6 +254,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           items={fourKMovies}
           selectedItem={visibleMovie}
           onSelect={setSelectedMovie}
+          onOpen={openDetail}
           emptyText="Nessun film 4K disponibile."
         />
 
@@ -240,6 +263,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           items={actionMovies}
           selectedItem={visibleMovie}
           onSelect={setSelectedMovie}
+          onOpen={openDetail}
           emptyText="Nessun film d’azione disponibile."
         />
 
@@ -248,6 +272,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
           items={sciFiMovies}
           selectedItem={visibleMovie}
           onSelect={setSelectedMovie}
+          onOpen={openDetail}
           emptyText="Nessun film di fantascienza disponibile."
         />
       </main>

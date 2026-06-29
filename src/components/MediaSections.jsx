@@ -1,26 +1,25 @@
 import ProgressBar from './ProgressBar.jsx';
 
-export function MediaPoster({ item, selected, onSelect }) {
+export function MediaPoster({ item, selected, onSelect, onOpen }) {
   return (
     <button
       type="button"
       className={selected ? 'film-poster-card selected' : 'film-poster-card'}
       style={{ '--poster': `url(${item.poster})` }}
-      onClick={() => onSelect(item)}
+      onClick={() => onOpen?.(item)}
       onMouseEnter={() => onSelect(item)}
     >
       <span className="film-quality-badge">{item.selectedQuality || item.quality}</span>
-      <span className="film-rating-badge">★ {item.rating}</span>
       <span className="film-poster-gradient" />
       <span className="film-poster-copy">
         <strong>{item.title}</strong>
-        <small>{item.year} · {item.selectedQuality || item.quality} · ★ {item.rating}</small>
+        <small>{item.year} · {item.genres[0]} · ★ {item.rating}</small>
       </span>
     </button>
   );
 }
 
-export function MediaRail({ title, items, selectedItem, onSelect, emptyText }) {
+export function MediaRail({ title, items, selectedItem, onSelect, onOpen, emptyText }) {
   return (
     <section className="film-rail">
       <div className="section-heading">
@@ -36,6 +35,7 @@ export function MediaRail({ title, items, selectedItem, onSelect, emptyText }) {
               item={item}
               selected={selectedItem.id === item.id}
               onSelect={onSelect}
+              onOpen={onOpen}
             />
           ))}
         </div>
@@ -46,7 +46,9 @@ export function MediaRail({ title, items, selectedItem, onSelect, emptyText }) {
   );
 }
 
-export function ContinueRail({ title, items, selectedItem, onSelect, emptyText, type = 'film' }) {
+export function ContinueRail({ title, items, selectedItem, onSelect, onOpen, emptyText, type = 'film' }) {
+  const visibleItems = items.slice(0, 4);
+
   return (
     <section className="film-rail">
       <div className="section-heading">
@@ -54,15 +56,16 @@ export function ContinueRail({ title, items, selectedItem, onSelect, emptyText, 
         <button type="button">Vedi tutti</button>
       </div>
 
-      {items.length ? (
-        <div className="media-continue-track">
-          {items.map((item) => (
+      {visibleItems.length ? (
+        <div className="media-continue-track compact">
+          {visibleItems.map((item) => (
             <button
               key={item.id}
               type="button"
               className={selectedItem.id === item.id ? 'media-continue-card selected' : 'media-continue-card'}
               style={{ '--continue-bg': `url(${item.backdrop})` }}
-              onClick={() => onSelect(item)}
+              onMouseEnter={() => onSelect(item)}
+              onClick={() => onOpen?.(item)}
             >
               <span className="continue-card-overlay" />
               <span className="continue-card-content-wide">

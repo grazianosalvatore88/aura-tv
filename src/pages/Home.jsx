@@ -12,7 +12,7 @@ import { movies } from '../data/movies.js';
 import { series } from '../data/series.js';
 import { continueWatching } from '../data/continueWatching.js';
 
-export default function Home() {
+export default function Home({ activePage = 'Home', onNavigate = () => {} }) {
   const [selectedChannel, setSelectedChannel] = useState(channels[0]);
 
   return (
@@ -20,7 +20,7 @@ export default function Home() {
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
 
-      <Sidebar />
+      <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
       <main className="app-main">
         <TopMenu />

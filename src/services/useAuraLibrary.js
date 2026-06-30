@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { loadAuraSettings } from './xtreamService.js';
-import { loadAuraFullLibrary } from './auraEngine.js';
-import { enrichChannelsWithEpg, loadEpgCache } from './epgService.js';
-import { getDeviceDate } from './timeService.js';
+import { loadAuraCoreLibrary } from '../core/auraCore.js';
 
 const initialState = {
   ready: false,
@@ -37,27 +35,27 @@ export default function useAuraLibrary() {
 
       try {
         setLibrary((current) => ({ ...current, loading: true, error: '' }));
-        const result = await loadAuraFullLibrary(settings);
+        const result = await loadAuraCoreLibrary(settings);
 
         if (cancelled) return;
 
-        const epg = loadEpgCache();
-        const rawChannels = result?.channels || result?.live || [];
-        const epgChannels = enrichChannelsWithEpg(rawChannels, epg, getDeviceDate());
+        const coreChannels = result?.channels || result?.live || [];
 
         setLibrary({
-          ready: Boolean(epgChannels?.length || result?.movies?.length || result?.series?.length),
+          ready: Boolean(coreChannels?.length || result?.movies?.length || result?.series?.length),
           loading: false,
           error: '',
           mode: result?.mode || 'demo',
-          live: epgChannels,
-          channels: epgChannels,
+          coreVersion: result?.coreVersion || '',
+          live: coreChannels,
+          channels: coreChannels,
           movies: result?.movies || [],
           series: result?.series || [],
           categories: result?.categories || [],
           stats: result?.stats || null,
+          diagnostics: result?.diagnostics || null,
           sourceType: settings?.sourceType || 'Demo',
-          epg
+          epg: result?.epg || null
         });
       } catch (error) {
         if (cancelled) return;

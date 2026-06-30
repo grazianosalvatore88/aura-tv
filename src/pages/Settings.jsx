@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
+import { loadAuraDiagnostics } from '../core/auraDiagnostics.js';
 import { getXtreamConfig, testXtreamConnection, testXtreamM3u, xtreamM3uRequest, xtreamRequest } from '../services/xtreamService.js';
 import { countM3uItems, fetchM3uFromUrl, isValidM3uText } from '../services/m3uService.js';
 import { buildEpgReportFromM3u, extractEpgUrlFromM3u, extractM3uEpgKeys, fetchEpgFromUrl, loadEpgCache, loadEpgReport, parseXmlTv, saveEpgCache, saveEpgReport } from '../services/epgService.js';
@@ -197,6 +198,59 @@ function StatusBanner({ status, message }) {
     <div className={status === 'error' ? 'settings-status error' : 'settings-status'}>
       {message}
     </div>
+  );
+}
+
+
+function AuraCoreDiagnosticsCard() {
+  let diagnostics = null;
+  try {
+    diagnostics = loadAuraDiagnostics();
+  } catch {
+    diagnostics = null;
+  }
+
+  if (!diagnostics) {
+    return (
+      <SettingCard
+        eyebrow="AURA Core"
+        title="Diagnostica sorgente"
+        description="Carica una lista e apri Home o Live TV per generare la diagnostica intelligente."
+      >
+        <div className="aura-core-diagnostics empty">
+          <strong>Nessuna analisi disponibile</strong>
+          <span>Il motore AURA Core genererà il report dopo il primo caricamento della sorgente.</span>
+        </div>
+      </SettingCard>
+    );
+  }
+
+  const streamCounts = diagnostics.streamCounts || {};
+  const compatibility = diagnostics.compatibility || {};
+
+  return (
+    <SettingCard
+      eyebrow="AURA Core"
+      title="Diagnostica sorgente"
+      description="Analisi intelligente generata dal motore AURA Core."
+    >
+      <div className="aura-core-diagnostics">
+        <div className="aura-core-score">
+          <span>Qualità libreria</span>
+          <strong>{diagnostics.healthScore}%</strong>
+        </div>
+        <div className="settings-mini-grid relaxed">
+          <div className="settings-mini-card"><span>Canali caricati</span><strong>{diagnostics.totalChannels}</strong></div>
+          <div className="settings-mini-card"><span>Riconosciuti</span><strong>{diagnostics.recognizedChannels}</strong></div>
+          <div className="settings-mini-card"><span>Con logo</span><strong>{diagnostics.channelsWithLogo}</strong></div>
+          <div className="settings-mini-card"><span>Con EPG</span><strong>{diagnostics.channelsWithEpg}</strong></div>
+          <div className="settings-mini-card"><span>HLS</span><strong>{streamCounts.hls || 0}</strong></div>
+          <div className="settings-mini-card"><span>DASH</span><strong>{streamCounts.dash || 0}</strong></div>
+          <div className="settings-mini-card"><span>Relinker</span><strong>{streamCounts['rai-relinker'] || 0}</strong></div>
+          <div className="settings-mini-card"><span>Compatibilità alta</span><strong>{compatibility.alta || 0}</strong></div>
+        </div>
+      </div>
+    </SettingCard>
   );
 }
 
@@ -862,13 +916,15 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                     )}
                   </div>
 
-                  <div className="settings-mini-grid relaxed">
-                    <ToggleRow title="Unisci qualità duplicate" subtitle="Un solo contenuto con HD, FHD e 4K dietro" active={true} onToggle={() => setNotice({ status: 'ok', message: 'Questa funzione resterà sempre attiva nel motore AURA.' })} />
-                    <ToggleRow title="Loghi e metadata" subtitle="Usa loghi, poster, descrizioni e informazioni disponibili" active={true} onToggle={() => setNotice({ status: 'ok', message: 'Questa funzione resterà sempre attiva nel motore AURA.' })} />
+                  <div className="aura-core-mode-note">
+                    <strong>AURA Core attivo</strong>
+                    <span>Qualità duplicate, loghi, nomi puliti, metadata e riconoscimento canali sono gestiti automaticamente dal motore principale.</span>
                   </div>
                 </SettingCard>
               </>
             ) : null}
+
+            {activeTab === 'Sorgente TV' ? <AuraCoreDiagnosticsCard /> : null}
 
             {activeTab === 'Player' ? (
               <SettingCard
@@ -965,7 +1021,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                 description="Gestione dati, cache e informazioni dispositivo."
               >
                 <div className="device-info-grid">
-                  <span><strong>Versione</strong>AURA TV v2.6</span>
+                  <span><strong>Versione</strong>AURA TV v3.2.0 Core</span>
                   <span><strong>Dispositivo</strong>Locale</span>
                   <span><strong>Stato lista</strong>{settings.connectionStatus}</span>
                   <span><strong>Ultimo aggiornamento</strong>{settings.lastUpdate}</span>

@@ -264,14 +264,16 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
                   >
                     <button
                       type="button"
-                      className="favorite-channel-main-v23"
+                      className="favorite-channel-main-v23 favorite-channel-main-v323"
                       onClick={() => setPlayerChannel(channel)}
                     >
-                      <ChannelLogo text={channel.logo} />
-                      <div>
+                      <div className="favorite-channel-logo-shell-v323">
+                        {channel.icon ? <img src={channel.icon} alt="" className="favorite-channel-logo-image" /> : <ChannelLogo text={channel.logo} />}
+                      </div>
+                      <div className="favorite-channel-copy-v323">
                         <strong>{channel.channel}</strong>
-                        <span>{channel.title}</span>
-                        <small>{channel.category} · {channel.selectedQuality}</small>
+                        <span>{channel.title || 'Programmazione non disponibile'}</span>
+                        {channel.nextProgram ? <small>Prossimo: {channel.nextProgram}</small> : <small>Programma successivo non disponibile</small>}
                       </div>
                     </button>
 

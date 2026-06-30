@@ -6,9 +6,7 @@ import ProgressBar from '../components/ProgressBar.jsx';
 import PlayerScreen from '../components/PlayerScreen.jsx';
 import { guideRows, liveCategories, liveChannels } from '../data/liveChannels.js';
 import { loadAuraSettings } from '../services/xtreamService.js';
-import { loadAuraLiveLibrary } from '../services/auraEngine.js';
-import { enrichChannelsWithEpg, loadEpgCache } from '../services/epgService.js';
-import { getDeviceDate } from '../services/timeService.js';
+import { loadAuraCoreLibrary } from '../core/auraCore.js';
 
 const FAVORITES_KEY = 'aura-live-favorites';
 
@@ -96,19 +94,16 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
         setLoadingLibrary(true);
         setLibraryError('');
 
-        const result = await loadAuraLiveLibrary(settings);
+        const result = await loadAuraCoreLibrary(settings);
 
         if (cancelled) return;
 
         if (result.channels.length) {
-          const epg = loadEpgCache();
-          const epgChannels = enrichChannelsWithEpg(result.channels, epg, getDeviceDate());
-          const resultWithEpg = { ...result, channels: epgChannels, live: epgChannels, epg };
-          setLibrary(resultWithEpg);
-          setSelectedChannel(epgChannels[0]);
+          setLibrary(result);
+          setSelectedChannel(result.channels[0]);
           setActiveCategory('Tutti');
           setResolutionMap(Object.fromEntries(
-            epgChannels.map((item) => [item.id, item.selectedResolution || item.qualityLabel || 'HD'])
+            result.channels.map((item) => [item.id, item.selectedResolution || item.qualityLabel || 'HD'])
           ));
         } else {
           setLibrary({
@@ -453,68 +448,39 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
         </section>
 
         {showGuide ? (
-          <section className="tv-guide glass-panel">
-            <div className="guide-heading">
-              <div>
-                <span className="eyebrow">EPG</span>
-                <h2>{(library.mode === 'xtream-api' || library.mode === 'xtream-m3u' || library.mode === 'm3u-local') ? 'Guida TV base' : 'Guida TV'}</h2>
+          library.epg && filteredChannels.some((channel) => channel.epg) ? (
+            <section className="tv-guide glass-panel">
+              <div className="guide-heading">
+                <div>
+                  <h2>Guida TV</h2>
+                </div>
+                <button type="button">Oggi ▾</button>
               </div>
-              <button type="button">Oggi ▾</button>
-            </div>
 
-            {library.epg ? (
               <div className="guide-grid">
-                {filteredChannels.slice(0, 8).map((channel) => (
+                {filteredChannels.filter((channel) => channel.epg).slice(0, 8).map((channel) => (
                   <div className="guide-row" key={channel.id}>
                     <div className="guide-channel-name">
                       {channel.icon ? <img src={channel.icon} alt="" className="channel-logo-image" /> : <ChannelLogo text={channel.logo} />}
                       <strong>{channel.channel}</strong>
                     </div>
                     <div className="guide-programs">
-                      <button type="button" className={channel.epg ? 'active' : ''}>
-                        <strong>{channel.title || 'Programmazione non disponibile'}</strong>
-                        <span>{channel.time || 'Ora'}</span>
+                      <button type="button" className="active">
+                        <strong>{channel.title}</strong>
+                        <span>{channel.time}</span>
                       </button>
-                      <button type="button">
-                        <strong>{channel.nextProgram || 'Prossimo programma non disponibile'}</strong>
-                        <span>Next</span>
-                      </button>
+                      {channel.nextProgram ? (
+                        <button type="button">
+                          <strong>{channel.nextProgram}</strong>
+                          <span>Next</span>
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <>
-                <div className="time-rail">
-                  <span>21:30</span>
-                  <span>22:00</span>
-                  <span>22:30</span>
-                  <span>23:00</span>
-                  <span>23:30</span>
-                  <span>00:00</span>
-                </div>
-
-                <div className="guide-grid">
-                  {guideRows.map((row) => (
-                    <div className="guide-row" key={row.channel}>
-                      <div className="guide-channel-name">
-                        <ChannelLogo text={row.logo} />
-                        <strong>{row.channel}</strong>
-                      </div>
-                      <div className="guide-programs">
-                        {row.programs.map((program) => (
-                          <button key={program.title} type="button" className={program.active ? 'active' : ''}>
-                            <strong>{program.title}</strong>
-                            <span>{program.time}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </section>
+            </section>
+          ) : null
         ) : null}
 
         <section className="remote-bar glass-panel" aria-label="Comandi telecomando">

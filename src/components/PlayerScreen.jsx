@@ -22,29 +22,13 @@ function SpeakerIcon({ muted = false }) {
   );
 }
 
-function CaptionsIcon() {
+function FullscreenIcon() {
   return (
     <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="5" width="18" height="14" rx="3" />
-      <path d="M8 12h3" />
-      <path d="M13 12h3" />
-      <path d="M8 15h5" />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3.4" />
-      <path d="M12 2.8v3" />
-      <path d="M12 18.2v3" />
-      <path d="M4.35 4.35 6.5 6.5" />
-      <path d="m17.5 17.5 2.15 2.15" />
-      <path d="M2.8 12h3" />
-      <path d="M18.2 12h3" />
-      <path d="M4.35 19.65 6.5 17.5" />
-      <path d="m17.5 6.5 2.15-2.15" />
+      <path d="M8 3H4v4" />
+      <path d="M16 3h4v4" />
+      <path d="M8 21H4v-4" />
+      <path d="M16 21h4v-4" />
     </svg>
   );
 }
@@ -60,19 +44,6 @@ function PauseIcon() {
 
 function PlayIcon() {
   return <span className="play-symbol" aria-hidden="true" />;
-}
-
-function PlayerButton({ children, label, className = '', onClick, active = false }) {
-  return (
-    <button
-      type="button"
-      className={`player-icon-button ${className} ${active ? 'active' : ''}`}
-      aria-label={label}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
 }
 
 function ColorCommand({ color, label }) {
@@ -96,9 +67,6 @@ export default function PlayerScreen({
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [subtitles, setSubtitles] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [audioPanelOpen, setAudioPanelOpen] = useState(false);
-  const [subPanelOpen, setSubPanelOpen] = useState(false);
   const [qualityPanelOpen, setQualityPanelOpen] = useState(false);
   const [fullscreenActive, setFullscreenActive] = useState(false);
   const [streamStatus, setStreamStatus] = useState('');
@@ -109,16 +77,18 @@ export default function PlayerScreen({
   const background = media.backdrop || media.background || '';
   const title = isLive ? (media.channel || media.title || 'AURA Player') : (media.title || 'AURA Player');
   const quality = media.selectedQuality || media.selectedResolution || media.quality || media.qualityLabel || 'Auto';
+  const currentProgram = isLive ? (media.title || 'Programmazione non disponibile') : title;
+  const currentDescription = isLive ? (media.description || 'Descrizione non disponibile') : (media.description || media.subtitle || '');
+  const nextLabel = media.nextProgram || 'Programma successivo non disponibile';
+  const startLabel = media.time?.split(' - ')?.[0] || '';
+  const stopLabel = media.time?.split(' - ')?.[1] || '';
+  const hasRealProgress = Boolean(media.epg && media.time && media.progress > 0);
 
   const topSubtitle = useMemo(() => {
-    if (isLive) return `${media.title || 'In onda ora'}${media.time ? ` · ${media.time}` : ''}`;
-    if (type === 'series') return `${media.currentEpisode || 'Stagione 1 · Episodio 1'}${media.selectedQuality ? ` · ${media.selectedQuality}` : ''}`;
-    return `${media.year || ''}${media.duration ? ` · ${media.duration}` : ''}${media.selectedQuality ? ` · ${media.selectedQuality}` : ''}`;
-  }, [isLive, media, type]);
-
-  const nextLabel = media.nextProgram || 'Programma successivo non disponibile';
-  const startLabel = media.time?.split(' - ')?.[0] || 'Ora';
-  const stopLabel = media.time?.split(' - ')?.[1] || '';
+    if (isLive) return `${currentProgram}${media.time ? ` · ${media.time}` : ''}`;
+    if (type === 'series') return `${media.currentEpisode || 'Stagione 1 · Episodio 1'}${quality ? ` · ${quality}` : ''}`;
+    return `${media.year || ''}${media.duration ? ` · ${media.duration}` : ''}${quality ? ` · ${quality}` : ''}`;
+  }, [currentProgram, isLive, media, quality, type]);
 
   function revealHub() {
     setHubVisible(true);
@@ -129,29 +99,40 @@ export default function PlayerScreen({
   }, [media.id]);
 
   useEffect(() => {
+    function handleFullscreenChange() {
+      setFullscreenActive(Boolean(document.fullscreenElement));
+      if (document.fullscreenElement) {
+        setHubVisible(false);
+      } else {
+        setHubVisible(true);
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
     if (/non disponibile|errore|premi play/i.test(streamStatus || '')) {
       setHubVisible(true);
       return undefined;
     }
 
-    if (paused || settingsOpen || audioPanelOpen || subPanelOpen || qualityPanelOpen) {
+    if (paused || qualityPanelOpen) {
       setHubVisible(true);
       return undefined;
     }
 
-    const timer = setTimeout(() => setHubVisible(false), 3800);
+    const timer = setTimeout(() => setHubVisible(false), 5200);
     return () => clearTimeout(timer);
-  }, [paused, settingsOpen, audioPanelOpen, subPanelOpen, qualityPanelOpen, media.id, hubVisible, streamStatus]);
+  }, [paused, qualityPanelOpen, media.id, hubVisible, streamStatus]);
 
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === 'Escape' || event.key === 'Backspace') {
         event.preventDefault();
-        if (!hubVisible) {
-          setHubVisible(true);
-        } else {
-          onBack();
-        }
+        if (!hubVisible) setHubVisible(true);
+        else onBack();
         return;
       }
 
@@ -161,7 +142,7 @@ export default function PlayerScreen({
         setHubVisible(true);
       }
 
-      if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
         setHubVisible(true);
       }
     }
@@ -172,17 +153,37 @@ export default function PlayerScreen({
 
   function toggleFullscreen() {
     const root = document.documentElement;
+
     if (!document.fullscreenElement && root.requestFullscreen) {
-      root.requestFullscreen().then(() => setFullscreenActive(true)).catch(() => setFullscreenActive((value) => !value));
+      root.requestFullscreen()
+        .then(() => {
+          setFullscreenActive(true);
+          setHubVisible(false);
+        })
+        .catch(() => {
+          setFullscreenActive((value) => !value);
+          setHubVisible(false);
+        });
       return;
     }
 
     if (document.exitFullscreen) {
-      document.exitFullscreen().then(() => setFullscreenActive(false)).catch(() => setFullscreenActive((value) => !value));
+      document.exitFullscreen()
+        .then(() => {
+          setFullscreenActive(false);
+          setHubVisible(true);
+        })
+        .catch(() => setFullscreenActive((value) => !value));
       return;
     }
 
     setFullscreenActive((value) => !value);
+    setHubVisible(false);
+  }
+
+  function togglePause() {
+    setPaused((value) => !value);
+    revealHub();
   }
 
   function cycleQuality() {
@@ -191,14 +192,9 @@ export default function PlayerScreen({
     revealHub();
   }
 
-  function togglePause() {
-    setPaused((value) => !value);
-    revealHub();
-  }
-
   return (
     <div
-      className={`${isLive ? 'aura-player live-player' : 'aura-player vod-player'} ${hubVisible ? 'hub-visible' : 'hub-hidden'}`}
+      className={`${isLive ? 'aura-player live-player aura-player-v326' : 'aura-player vod-player aura-player-v326'} ${hubVisible ? 'hub-visible' : 'hub-hidden'}`}
       onMouseMove={revealHub}
       onClick={revealHub}
       onTouchStart={revealHub}
@@ -217,150 +213,94 @@ export default function PlayerScreen({
 
       <div className="player-vignette" />
 
-      <button type="button" className="player-back-button" onClick={onBack}>← Indietro</button>
+      <button type="button" className="player-back-button player-back-button-v326" onClick={onBack}>
+        ← Indietro
+      </button>
 
-      <section className="player-top-title">
+      <section className="player-top-title player-top-title-v326">
         <span>{isLive ? 'Live TV' : type === 'series' ? 'Serie TV' : 'Film'}</span>
         <h1>{title}</h1>
         <p>{topSubtitle}{streamStatus ? ` · ${streamStatus}` : ''}</p>
       </section>
 
-      <div className="player-top-actions">
-        <PlayerButton label="Impostazioni player" active={settingsOpen} onClick={() => {
-          setSettingsOpen((value) => !value);
-          revealHub();
-        }}>
-          <SettingsIcon />
-        </PlayerButton>
-        <PlayerButton label={muted ? 'Attiva audio' : 'Disattiva audio'} active={muted || audioPanelOpen} onClick={() => {
-          setMuted((value) => !value);
-          setAudioPanelOpen((value) => !value);
-          revealHub();
-        }}>
+      <div className="player-top-actions-v326">
+        <button type="button" onClick={() => setMuted((value) => !value)} aria-label={muted ? 'Attiva suono' : 'Disattiva suono'}>
           <SpeakerIcon muted={muted} />
-        </PlayerButton>
-        <PlayerButton label="Sottotitoli" active={subtitles || subPanelOpen} onClick={() => {
-          setSubtitles((value) => !value);
-          setSubPanelOpen((value) => !value);
-          revealHub();
-        }}>
-          <CaptionsIcon />
-        </PlayerButton>
-        <button type="button" className={qualityPanelOpen ? 'player-quality-pill active' : 'player-quality-pill'} onClick={cycleQuality}>{quality}</button>
+          <span>{muted ? 'Muto' : 'Suono'}</span>
+        </button>
+        <button type="button" onClick={toggleFullscreen} aria-label="Schermo intero">
+          <FullscreenIcon />
+          <span>{fullscreenActive ? 'Esci' : 'Schermo intero'}</span>
+        </button>
       </div>
 
-      {(settingsOpen || audioPanelOpen || subPanelOpen || qualityPanelOpen) ? (
-        <div className="player-floating-panel">
-          {settingsOpen ? (
-            <>
-              <strong>Impostazioni player</strong>
-              <button type="button" onClick={toggleFullscreen}>Schermo intero: {fullscreenActive ? 'On' : 'Off'}</button>
-              <button type="button" onClick={() => setHubVisible(false)}>Nascondi interfaccia</button>
-            </>
-          ) : null}
+      <section className="player-bottom-hub-v326">
+        <div className="player-bottom-content-v326">
+          <div className="player-channel-block-v326">
+            <div className="player-logo-box-v326">
+              {media.icon ? <img src={media.icon} alt="" className="player-channel-image" /> : <ChannelLogo text={media.logo || 'TV'} />}
+            </div>
+            <div className="player-channel-text-v326">
+              <span>{isLive ? media.channel : type === 'series' ? 'Serie TV' : 'Film'}</span>
+              <strong>{currentProgram}</strong>
+              <small>{currentDescription}</small>
+            </div>
+          </div>
 
-          {audioPanelOpen ? (
-            <>
-              <strong>Audio</strong>
-              <button type="button" onClick={() => setMuted(false)}>Italiano · Stereo</button>
-              <button type="button" onClick={() => setMuted(true)}>Muto</button>
-            </>
-          ) : null}
+          <div className="player-progress-block-v326">
+            <div className="player-next-line-v326">
+              <span>Prossimo</span>
+              <strong>{nextLabel}</strong>
+            </div>
 
-          {subPanelOpen ? (
-            <>
-              <strong>Sottotitoli</strong>
-              <button type="button" onClick={() => setSubtitles(false)}>Disattivati</button>
-              <button type="button" onClick={() => setSubtitles(true)}>Italiano</button>
-            </>
-          ) : null}
+            {isLive && hasRealProgress ? (
+              <div className="player-progress-row-v326">
+                <span>{startLabel}</span>
+                <ProgressBar value={media.progress || 0} />
+                <span>{stopLabel}</span>
+              </div>
+            ) : isLive ? (
+              <div className="player-progress-empty-v326">
+                <span>Guida non disponibile</span>
+              </div>
+            ) : (
+              <div className="player-progress-row-v326">
+                <span>{media.continueLabel?.replace('Riprendi da ', '') || '00:00'}</span>
+                <ProgressBar value={media.progress || 0} />
+                <span>{quality}</span>
+              </div>
+            )}
+          </div>
 
-          {qualityPanelOpen ? (
-            <>
-              <strong>Qualità</strong>
-              <button type="button" onClick={cycleQuality}>Auto</button>
-              <button type="button" onClick={cycleQuality}>4K</button>
-              <button type="button" onClick={cycleQuality}>FHD</button>
-              <button type="button" onClick={cycleQuality}>HD</button>
-            </>
-          ) : null}
+          <div className="player-play-block-v326">
+            <button
+              type="button"
+              className="player-play-button-v326"
+              aria-label={paused ? 'Riproduci' : 'Pausa'}
+              onClick={togglePause}
+            >
+              {paused ? <PlayIcon /> : <PauseIcon />}
+            </button>
+          </div>
+
+          <div className="player-actions-v326">
+            <button type="button" onClick={onToggleFavorite}><ColorCommand color="red" label="Preferito" /></button>
+            <button type="button" onClick={cycleQuality}><ColorCommand color="blue" label={quality} /></button>
+            <button type="button" onClick={() => setQualityPanelOpen((value) => !value)}><ColorCommand color="green" label="Opzioni" /></button>
+            <button type="button" onClick={() => setSubtitles((value) => !value)}><ColorCommand color="yellow" label={subtitles ? 'Sub On' : 'Sottotitoli'} /></button>
+          </div>
+        </div>
+      </section>
+
+      {qualityPanelOpen ? (
+        <div className="player-floating-panel player-floating-panel-v326">
+          <strong>Qualità</strong>
+          <button type="button" onClick={cycleQuality}>Auto</button>
+          <button type="button" onClick={cycleQuality}>4K</button>
+          <button type="button" onClick={cycleQuality}>FHD</button>
+          <button type="button" onClick={cycleQuality}>HD</button>
         </div>
       ) : null}
-
-      {isLive ? (
-        <section className="player-glass-panel live-control-panel">
-          <div className="live-player-mainline">
-            {media.icon ? <img src={media.icon} alt="" className="player-channel-image" /> : <ChannelLogo text={media.logo || 'TV'} />}
-            <div className="live-player-info">
-              <span>{media.number || ''}</span>
-              <strong>{media.channel}</strong>
-              <small>{media.title || 'In onda ora'}</small>
-            </div>
-
-            <div className="live-player-next">
-              <span>NEXT</span>
-              <strong>{nextLabel}</strong>
-              <small>{media.epg ? 'EPG' : 'Guida non disponibile'}</small>
-            </div>
-
-            <div className="live-player-zap">
-              <strong>{quality}</strong>
-              <small>{media.category || 'Live TV'}</small>
-            </div>
-          </div>
-
-          <div className="player-progress-row live">
-            <span>{startLabel}</span>
-            <ProgressBar value={media.progress || 0} />
-            <span>{stopLabel}</span>
-          </div>
-
-          <div className="player-controls-row">
-            <div className="player-volume">
-              <SpeakerIcon muted={muted} />
-              <ProgressBar value={muted ? 0 : 34} />
-            </div>
-
-            <div className="player-center-controls">
-              <PlayerButton label={paused ? 'Riproduci' : 'Pausa'} className="main" onClick={togglePause}>
-                {paused ? <PlayIcon /> : <PauseIcon />}
-              </PlayerButton>
-            </div>
-
-            <div className="player-color-commands">
-              <button type="button" onClick={onToggleFavorite}><ColorCommand color="red" label="Preferito" /></button>
-              <button type="button" onClick={cycleQuality}><ColorCommand color="blue" label="Qualità" /></button>
-              <ColorCommand color="green" label="Lista" />
-              <button type="button" onClick={() => setAudioPanelOpen((value) => !value)}><ColorCommand color="yellow" label="Audio" /></button>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="player-glass-panel movie-control-panel">
-          <div className="player-progress-row">
-            <span>{media.continueLabel?.replace('Riprendi da ', '') || '00:00'}</span>
-            <ProgressBar value={media.progress || 0} />
-            <span>{quality}</span>
-          </div>
-
-          <div className="player-controls-row">
-            <div className="player-volume">
-              <SpeakerIcon muted={muted} />
-              <ProgressBar value={muted ? 0 : 34} />
-            </div>
-
-            <div className="player-center-controls">
-              <PlayerButton label={paused ? 'Riproduci' : 'Pausa'} className="main" onClick={togglePause}>
-                {paused ? <PlayIcon /> : <PauseIcon />}
-              </PlayerButton>
-            </div>
-
-            <div className="player-side-actions">
-              <PlayerButton label="Schermo intero" active={fullscreenActive} onClick={toggleFullscreen}>⛶</PlayerButton>
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   );
 }

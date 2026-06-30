@@ -15,11 +15,11 @@ export default function Hero({ item, onWatch = () => {}, onInfo = () => {} }) {
         if (event.key === 'Enter') onWatch(item);
       }}
     >
-      <div className="hero-logo-wrap">
+      <div className="hero-logo-wrap hero-logo-wrap-v324">
         {item.icon ? <img src={item.icon} alt="" className="hero-channel-image" /> : <ChannelLogo text={item.logo} />}
       </div>
 
-      <div className="hero-content">
+      <div className="hero-content hero-content-v324">
         <div className="hero-meta clean-hero-meta">
           <strong>{item.channel}</strong>
           <span>{item.time}</span>

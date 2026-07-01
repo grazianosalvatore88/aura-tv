@@ -1,12 +1,16 @@
 {
   "name": "aura-tv",
   "private": true,
-  "version": "3.3.3",
+  "version": "3.3.4",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "build:webos": "vite build && node scripts/prepare-webos.mjs",
+    "package:webos": "npm run build:webos && ares-package webos",
+    "install:webos": "ares-install --device aura-lg-tv com.aura.tv_1.0.0_all.ipk",
+    "launch:webos": "ares-launch --device aura-lg-tv com.aura.tv"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

@@ -1,55 +1,124 @@
-# AURA TV v3.3.3
+# AURA TV v3.3.4 - LG webOS Test Build
 
-Fix stato account Xtream e messaggi connessione.
+Versione preparata per test su TV LG webOS.
 
-## Correzioni
+## Cosa contiene
 
-- AURA legge correttamente `user_info.status`.
-- Se l'account è `Expired`, non mostra più un errore generico.
-- Messaggio chiaro:
-  - account riconosciuto ma scaduto;
-  - scadenza formattata;
-  - rinnovo/contatto fornitore.
-- Se server risponde ma credenziali non sono valide, il messaggio è distinto.
-- Se c'è `Failed to fetch`, il messaggio spiega proxy/mixed content/blocco rete.
-- La compatibilità Xtream resta automatica e nascosta.
-- AURA legge `allowed_output_formats` e salva il formato automatico preferito:
-  - `m3u8` se disponibile;
-  - altrimenti `ts`.
-- I link stream usano il formato automatico salvato.
-- In Sorgente TV compare solo il campo informativo “Formato automatico”, non una scelta manuale.
-- Build verificata.
+- Tutte le correzioni fino alla v3.3.3.
+- Script per generare la cartella `webos`.
+- File `appinfo.json` generato automaticamente.
+- Comandi npm per build, package, installazione e lancio su LG TV.
+- Build Vite verificata.
 
-## Test con i dati Smarters
+## Prima installazione strumenti LG
 
-Con risposta:
+Installa la CLI webOS:
 
-```json
-{
-  "auth": 1,
-  "status": "Expired",
-  "allowed_output_formats": ["m3u8", "ts"]
-}
+```bash
+npm install -g @webos-tools/cli
 ```
 
-AURA deve mostrare:
+Poi verifica:
+
+```bash
+ares --version
+```
+
+## Sulla TV LG
+
+1. Installa l'app **Developer Mode** dallo store LG.
+2. Accedi con account LG Developer.
+3. Attiva **Dev Mode Status**.
+4. Riavvia la TV.
+5. Riapri Developer Mode e segnati:
+   - IP TV
+   - porta SSH
+   - passphrase/key server
+
+La TV e il PC devono essere sulla stessa rete.
+
+## Collegare la TV al PC
+
+Esegui:
+
+```bash
+ares-setup-device
+```
+
+Scegli `add` e crea un dispositivo, per esempio:
 
 ```text
-Account riconosciuto ma scaduto...
-Formato automatico: m3u8
+nome dispositivo: aura-lg-tv
+host/ip: IP della TV
+port: porta indicata dalla TV
+username: prisoner
 ```
 
-## Comandi
+Poi verifica:
+
+```bash
+ares-device-info --device aura-lg-tv
+```
+
+## Creare il pacchetto LG
+
+Nel progetto:
 
 ```bash
 npm install
-npm run dev
+npm run build:webos
+ares-package webos
 ```
 
-## Commit
+Oppure:
 
 ```bash
-git add .
-git commit -m "Gestisce stato Xtream Aura v3.3.3"
-git push
+npm run package:webos
 ```
+
+Questo crea un file tipo:
+
+```text
+com.aura.tv_1.0.0_all.ipk
+```
+
+## Installare sulla TV
+
+```bash
+ares-install --device aura-lg-tv com.aura.tv_1.0.0_all.ipk
+```
+
+## Avviare sulla TV
+
+```bash
+ares-launch --device aura-lg-tv com.aura.tv
+```
+
+## Comandi rapidi
+
+```bash
+npm install
+npm run build:webos
+ares-package webos
+ares-install --device aura-lg-tv com.aura.tv_1.0.0_all.ipk
+ares-launch --device aura-lg-tv com.aura.tv
+```
+
+## Test da fare sulla TV
+
+- Apertura app.
+- Navigazione menu col telecomando.
+- Impostazioni > Sorgente TV.
+- Inserimento Xtream.
+- Test connessione.
+- Messaggio account Active/Expired.
+- Caricamento canali.
+- Apertura player.
+- Play/pausa.
+- Muto.
+- Zapping.
+- Layout su 1920x1080.
+
+## Nota importante
+
+Questa è una web app pacchettizzata per webOS. Se il server IPTV usa HTTP, la TV potrebbe comportarsi meglio rispetto a browser HTTPS/Vercel, ma eventuali blocchi IP o limitazioni del provider possono comunque rimanere.

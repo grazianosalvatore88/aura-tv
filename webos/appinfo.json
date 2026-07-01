@@ -1,0 +1,18 @@
+{
+  "id": "com.aura.tv",
+  "version": "1.0.0",
+  "vendor": "AURA",
+  "type": "web",
+  "main": "index.html",
+  "title": "AURA TV",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "appDescription": "AURA TV test build for LG webOS",
+  "resolution": "1920x1080",
+  "bgColor": "#050711",
+  "iconColor": "#050711",
+  "requiredPermissions": [
+    "internet"
+  ],
+  "trustLevel": "default"
+}

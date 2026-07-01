@@ -380,14 +380,14 @@ function buildLiveChannel(stream, categoryMap, index, config, organizationMode) 
     logo: stream.stream_icon || '',
     epgChannelId: stream.epg_channel_id || '',
     streamId: stream.stream_id,
-    streamUrl: String(stream.direct_source || '').trim() || buildXtreamStreamUrl(stream.stream_id, 'm3u8', config),
+    streamUrl: String(stream.direct_source || '').trim() || buildXtreamStreamUrl(stream.stream_id, config.outputFormat || 'm3u8', config),
     httpUserAgent: ''
   };
   const channel = toLiveChannel(entry, index, organizationMode, 'Sorgente');
   return {
     ...channel,
     id: `xtream-${stream.stream_id}`,
-    fallbackStreamUrl: buildXtreamStreamUrl(stream.stream_id, 'ts', config),
+    fallbackStreamUrl: buildXtreamStreamUrl(stream.stream_id, config.outputFormat === 'ts' ? 'm3u8' : 'ts', config),
     source: 'Sorgente'
   };
 }
@@ -408,7 +408,7 @@ async function loadXtreamViaApi(settings, config) {
 
 async function loadXtreamViaM3u(settings, config) {
   try {
-    const m3uText = await xtreamM3uRequest('mpegts', config);
+    const m3uText = await xtreamM3uRequest(config.outputFormat === 'm3u8' ? 'm3u8' : 'mpegts', config);
     const library = splitM3uLibrary(m3uText, settings, 'Lista generata');
     if (library.live.length || library.movies.length || library.series.length) return { ...library, mode: 'xtream-m3u' };
   } catch {

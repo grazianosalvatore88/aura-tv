@@ -3,7 +3,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { loadAuraDiagnostics } from '../core/auraDiagnostics.js';
-import { getXtreamConfig, testXtreamConnection, testXtreamM3u, xtreamM3uRequest, xtreamRequest } from '../services/xtreamService.js';
+import { getXtreamConfig, testXtreamConnection, testXtreamM3u, xtreamM3uRequest, xtreamRequest, explainXtreamFetchError } from '../services/xtreamService.js';
 import { countM3uItems, fetchM3uFromUrl, isValidM3uText } from '../services/m3uService.js';
 import { buildEpgReportFromM3u, extractEpgUrlFromM3u, extractM3uEpgKeys, fetchEpgFromUrl, loadEpgCache, loadEpgReport, parseXmlTv, saveEpgCache, saveEpgReport } from '../services/epgService.js';
 
@@ -23,7 +23,8 @@ const defaultSettings = {
     linkUrl: '',
     username: '',
     password: '',
-    clientMode: 'Auto'
+    clientMode: 'Auto',
+    outputFormat: 'm3u8'
   },
   m3u: {
     playlistUrl: '',
@@ -383,19 +384,29 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }
 
     try {
-      setNotice({ status: 'ok', message: `Test sorgente in corso · compatibilità ${settings.xtream.clientMode || 'Auto'}...` });
+      setNotice({ status: 'ok', message: 'Test sorgente Xtream in corso...' });
       const result = await testXtreamConnection(getXtreamConfig(settings));
 
       updateSettings((current) => ({
         ...current,
-        connectionStatus: result.ok ? 'Test riuscito' : 'Verifica credenziali'
+        xtream: {
+          ...current.xtream,
+          outputFormat: result.preferredOutput || current.xtream.outputFormat || 'm3u8'
+        },
+        connectionStatus: result.ok
+          ? 'Account attivo'
+          : result.code === 'expired'
+            ? 'Account scaduto'
+            : result.reached
+              ? 'Verifica credenziali'
+              : 'Errore connessione'
       }), true);
 
       setNotice({
         status: result.ok ? 'ok' : 'error',
-        message: result.ok
+        message: result.message || (result.ok
           ? `Connessione Xtream riuscita. Stato account: ${result.status}.`
-          : 'Connessione raggiunta ma credenziali non confermate.'
+          : 'Connessione raggiunta ma credenziali non confermate.')
       });
     } catch (error) {
       try {
@@ -418,7 +429,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
           ...current,
           connectionStatus: 'Errore connessione'
         }), true);
-        setNotice({ status: 'error', message: fallbackError.message || error.message || 'Errore connessione sorgente.' });
+        setNotice({ status: 'error', message: explainXtreamFetchError(fallbackError) || explainXtreamFetchError(error) || 'Errore connessione sorgente.' });
       }
     }
   }
@@ -556,8 +567,38 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }
 
     try {
-      setNotice({ status: 'ok', message: 'Lettura canali in corso...' });
-      const streams = await xtreamRequest('get_live_streams', {}, getXtreamConfig(settings));
+      setNotice({ status: 'ok', message: 'Verifica account Xtream in corso...' });
+      const account = await testXtreamConnection(getXtreamConfig(settings));
+
+      if (!account.ok) {
+        updateSettings((current) => ({
+          ...current,
+          xtream: {
+            ...current.xtream,
+            outputFormat: account.preferredOutput || current.xtream.outputFormat || 'm3u8'
+          },
+          connectionStatus: account.code === 'expired' ? 'Account scaduto' : 'Account non attivo'
+        }), true);
+        setNotice({ status: 'error', message: account.message || 'Account Xtream non attivo.' });
+        return;
+      }
+
+      updateSettings((current) => ({
+        ...current,
+        xtream: {
+          ...current.xtream,
+          outputFormat: account.preferredOutput || current.xtream.outputFormat || 'm3u8'
+        }
+      }), true);
+
+      setNotice({ status: 'ok', message: 'Account attivo. Lettura canali in corso...' });
+      const streams = await xtreamRequest('get_live_streams', {}, getXtreamConfig({
+        ...settings,
+        xtream: {
+          ...settings.xtream,
+          outputFormat: account.preferredOutput || settings.xtream.outputFormat || 'm3u8'
+        }
+      }));
       const total = Array.isArray(streams) ? streams.length : 0;
 
       const timestamp = new Date().toLocaleString('it-IT', {
@@ -601,7 +642,7 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
           ...current,
           connectionStatus: 'Errore lista'
         }), true);
-        setNotice({ status: 'error', message: fallbackError.message || error.message || 'Errore aggiornamento lista.' });
+        setNotice({ status: 'error', message: explainXtreamFetchError(fallbackError) || explainXtreamFetchError(error) || 'Errore aggiornamento lista.' });
       }
     }
   }
@@ -798,6 +839,11 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                       <Field
                         label="Stato connessione"
                         value={settings.connectionStatus}
+                        onChange={() => {}}
+                      />
+                      <Field
+                        label="Formato automatico"
+                        value={settings.xtream.outputFormat || 'm3u8'}
                         onChange={() => {}}
                       />
                     </div>

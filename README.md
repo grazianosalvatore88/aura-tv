@@ -1,36 +1,43 @@
-# AURA TV v3.3.2
+# AURA TV v3.3.3
 
-Fix stabilità riproduzione StreamVideo.
+Fix stato account Xtream e messaggi connessione.
 
-## Correzione principale
+## Correzioni
 
-In `StreamVideo.jsx` il player HLS/DASH non viene più distrutto e ricreato quando premi Pausa o Muto.
-
-Prima l'effetto principale aveva `muted` e `paused` nelle dipendenze:
-
-```js
-[activeSrc, fallbackSrc, failedPrimary, muted, onStatusChange, paused, streamType]
-```
-
-Ora usa:
-
-```js
-[activeSrc, fallbackSrc, failedPrimary, onStatusChange, streamType]
-```
-
-## Altre correzioni collegate
-
-- `muted` resta gestito dall'effetto dedicato.
-- `paused` resta gestito dall'effetto dedicato.
-- Resume/play ora funziona anche per DASH, non solo per sorgenti non-DASH.
-- HLS avvia il play dopo `MANIFEST_PARSED`, se il player non è in pausa.
+- AURA legge correttamente `user_info.status`.
+- Se l'account è `Expired`, non mostra più un errore generico.
+- Messaggio chiaro:
+  - account riconosciuto ma scaduto;
+  - scadenza formattata;
+  - rinnovo/contatto fornitore.
+- Se server risponde ma credenziali non sono valide, il messaggio è distinto.
+- Se c'è `Failed to fetch`, il messaggio spiega proxy/mixed content/blocco rete.
+- La compatibilità Xtream resta automatica e nascosta.
+- AURA legge `allowed_output_formats` e salva il formato automatico preferito:
+  - `m3u8` se disponibile;
+  - altrimenti `ts`.
+- I link stream usano il formato automatico salvato.
+- In Sorgente TV compare solo il campo informativo “Formato automatico”, non una scelta manuale.
 - Build verificata.
 
-## Note tecniche da ricordare
+## Test con i dati Smarters
 
-- Gli stream HTTP possono essere bloccati se la pagina è servita in HTTPS per mixed content.
-- Con Xtream API attualmente vengono caricati i canali live; VOD/Serie API richiedono chiamate dedicate.
-- In sviluppo React StrictMode può eseguire effetti due volte; in build produzione non accade.
+Con risposta:
+
+```json
+{
+  "auth": 1,
+  "status": "Expired",
+  "allowed_output_formats": ["m3u8", "ts"]
+}
+```
+
+AURA deve mostrare:
+
+```text
+Account riconosciuto ma scaduto...
+Formato automatico: m3u8
+```
 
 ## Comandi
 
@@ -43,6 +50,6 @@ npm run dev
 
 ```bash
 git add .
-git commit -m "Fix stabilità StreamVideo Aura v3.3.2"
+git commit -m "Gestisce stato Xtream Aura v3.3.3"
 git push
 ```

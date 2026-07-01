@@ -247,11 +247,13 @@ export default function PlayerScreen({
             </div>
           </div>
 
-          <div className="player-progress-block-v326">
-            <div className="player-next-line-v326">
-              <span>Prossimo</span>
-              <strong>{nextLabel}</strong>
-            </div>
+          <div className={isLive ? 'player-progress-block-v326' : 'player-progress-block-v326 player-progress-block-vod-v331'}>
+            {isLive ? (
+              <div className="player-next-line-v326">
+                <span>Prossimo</span>
+                <strong>{nextLabel}</strong>
+              </div>
+            ) : null}
 
             {isLive && hasRealProgress ? (
               <div className="player-progress-row-v326">
@@ -264,24 +266,32 @@ export default function PlayerScreen({
                 <span>Guida non disponibile</span>
               </div>
             ) : (
-              <div className="player-progress-row-v326">
-                <span>{media.continueLabel?.replace('Riprendi da ', '') || '00:00'}</span>
-                <ProgressBar value={media.progress || 0} />
-                <span>{quality}</span>
+              <div className="player-vod-progress-v331">
+                <div className="player-vod-progress-head-v331">
+                  <strong>{media.progress ? `${media.progress}%` : '0%'}</strong>
+                  <span>{media.duration || quality}</span>
+                </div>
+                <div className="player-progress-row-v326 player-progress-row-v331">
+                  <span>{media.progress ? `${media.progress}%` : '0%'}</span>
+                  <ProgressBar value={media.progress || 0} />
+                  <span>{media.duration || quality}</span>
+                </div>
               </div>
             )}
           </div>
 
-          <div className="player-play-block-v326">
-            <button
-              type="button"
-              className="player-play-button-v326"
-              aria-label={paused ? 'Riproduci' : 'Pausa'}
-              onClick={togglePause}
-            >
-              {paused ? <PlayIcon /> : <PauseIcon />}
-            </button>
-          </div>
+          {isLive ? (
+            <div className="player-play-block-v326">
+              <button
+                type="button"
+                className="player-play-button-v326"
+                aria-label={paused ? 'Riproduci' : 'Pausa'}
+                onClick={togglePause}
+              >
+                {paused ? <PlayIcon /> : <PauseIcon />}
+              </button>
+            </div>
+          ) : null}
 
           <div className="player-actions-v326">
             <button type="button" onClick={onToggleFavorite}><ColorCommand color="red" label="Preferito" /></button>
@@ -291,6 +301,17 @@ export default function PlayerScreen({
           </div>
         </div>
       </section>
+
+      {!isLive ? (
+        <button
+          type="button"
+          className="player-center-play-v331"
+          aria-label={paused ? 'Riproduci' : 'Pausa'}
+          onClick={togglePause}
+        >
+          {paused ? <PlayIcon /> : <PauseIcon />}
+        </button>
+      ) : null}
 
       {qualityPanelOpen ? (
         <div className="player-floating-panel player-floating-panel-v326">

@@ -7070,3 +7070,371 @@ button { font: inherit; }
     order: 3;
   }
 }
+
+
+/* v3.2.8 No Fake Buttons */
+.section-static-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.065);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.68);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .02em;
+}
+
+.guide-program-card {
+  min-height: 74px;
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.10);
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.guide-program-card.active {
+  background:
+    radial-gradient(circle at top left, rgba(69, 106, 255, .24), transparent 45%),
+    rgba(255,255,255,.08);
+}
+
+.guide-program-card strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.guide-program-card span {
+  color: rgba(255,255,255,.60);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.season-selector-static span {
+  border: 0;
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.62);
+  font-weight: 950;
+}
+
+.season-selector-static span.active {
+  color: #fff;
+  background: rgba(255,255,255,.14);
+}
+
+.movie-hero-content h1,
+.series-hero-content h1,
+.movie-hero h1,
+.series-hero h1 {
+  font-size: clamp(42px, 4.8vw, 72px);
+  line-height: .98;
+  max-width: 980px;
+}
+
+.movie-actions,
+.detail-actions,
+.sport-actions {
+  margin-top: 28px;
+  padding-bottom: 8px;
+}
+
+
+/* v3.2.9 Pulizia schede e organizzazione */
+.season-selector-functional {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.season-selector-functional button {
+  min-height: 38px;
+  min-width: 58px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.68);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.season-selector-functional button.active {
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(50, 120, 255, .90), rgba(225, 52, 210, .92));
+  border-color: rgba(255,255,255,.22);
+}
+
+.episode-list .episode-row {
+  cursor: pointer;
+}
+
+.organization-explanation {
+  margin-bottom: 0;
+}
+
+
+/* v3.3.0 Scheda Serie TV: stagioni ed episodi più eleganti */
+.detail-info-card .season-selector-functional {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.detail-info-card .season-selector-functional button {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 18px;
+  font-size: 14px;
+  letter-spacing: .04em;
+  justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.detail-info-card .episode-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.detail-info-card .episode-list .episode-row {
+  width: 100%;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at left top, rgba(255,255,255,.08), transparent 38%),
+    rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.11);
+  color: #fff;
+  text-align: left;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.detail-info-card .episode-list .episode-row:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.22);
+  background:
+    radial-gradient(circle at left top, rgba(73, 111, 255, .16), transparent 40%),
+    rgba(255,255,255,.075);
+}
+
+.detail-info-card .episode-list .episode-row > span:first-child {
+  width: 72px;
+  min-height: 48px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.045));
+  border: 1px solid rgba(255,255,255,.14);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: .03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+.detail-info-card .episode-list .episode-row.active > span:first-child {
+  background:
+    linear-gradient(135deg, rgba(50, 120, 255, .90), rgba(225, 52, 210, .92));
+  border-color: rgba(255,255,255,.22);
+}
+
+.detail-info-card .episode-list .episode-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.detail-info-card .episode-list .episode-row strong {
+  display: block;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-info-card .episode-list .episode-row small {
+  color: rgba(255,255,255,.62);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+@media (min-width: 1180px) {
+  .detail-info-grid {
+    grid-template-columns: minmax(360px, .85fr) minmax(560px, 1.15fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .detail-info-card .episode-list .episode-row {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 13px;
+    padding: 12px;
+  }
+
+  .detail-info-card .episode-list .episode-row > span:first-child {
+    width: 62px;
+    min-height: 42px;
+    font-size: 11px;
+  }
+}
+
+
+/* v3.3.1 Player VOD: play al centro schermo, barra sotto pulita */
+.aura-player-v326.vod-player .player-play-block-v326 {
+  display: none !important;
+}
+
+.player-center-play-v331 {
+  position: fixed;
+  z-index: 14;
+  left: 50%;
+  top: 50%;
+  width: 92px;
+  height: 92px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.22);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,255,255,.24), transparent 38%),
+    rgba(10, 15, 34, .48);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 26px 86px rgba(0,0,0,.42);
+  backdrop-filter: blur(22px);
+  cursor: pointer;
+  transition: transform .22s ease, opacity .22s ease, background .22s ease;
+}
+
+.player-center-play-v331:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,255,255,.30), transparent 38%),
+    rgba(20, 28, 58, .58);
+}
+
+.player-center-play-v331 .pause-symbol {
+  width: 31px;
+  height: 35px;
+}
+
+.player-center-play-v331 .pause-symbol span {
+  width: 10px;
+  border-radius: 6px;
+}
+
+.player-center-play-v331 .play-symbol {
+  border-left-width: 28px;
+  border-top-width: 19px;
+  border-bottom-width: 19px;
+  margin-left: 7px;
+}
+
+.aura-player-v326.vod-player .player-bottom-content-v326 {
+  grid-template-columns: minmax(360px, 520px) minmax(460px, 1fr) minmax(390px, 500px);
+}
+
+.aura-player-v326.vod-player .player-progress-block-vod-v331 {
+  align-self: stretch;
+  justify-content: center;
+  padding: 0 18px;
+}
+
+.player-vod-progress-v331 {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+}
+
+.player-vod-progress-head-v331 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.player-vod-progress-head-v331 strong {
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.player-vod-progress-head-v331 span {
+  color: rgba(255,255,255,.74);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.player-progress-row-v331 {
+  grid-template-columns: 70px minmax(180px, 1fr) 84px;
+}
+
+.player-progress-row-v331 span {
+  color: rgba(255,255,255,.82);
+  font-size: 15px;
+  font-weight: 1000;
+}
+
+.aura-player-v326.vod-player .player-channel-text-v326 strong {
+  max-width: 100%;
+}
+
+.aura-player-v326.vod-player .player-channel-text-v326 small {
+  -webkit-line-clamp: 2;
+}
+
+.aura-player-v326.hub-hidden .player-center-play-v331 {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.92);
+}
+
+.aura-player-v326.hub-visible .player-center-play-v331 {
+  opacity: 1;
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+@media (max-width: 1180px) {
+  .aura-player-v326.vod-player .player-bottom-content-v326 {
+    grid-template-columns: minmax(280px, 390px) 1fr;
+    padding-bottom: 96px;
+  }
+
+  .aura-player-v326.vod-player .player-actions-v326 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 780px) {
+  .player-center-play-v331 {
+    width: 76px;
+    height: 76px;
+  }
+
+  .aura-player-v326.vod-player .player-bottom-content-v326 {
+    grid-template-columns: 1fr;
+  }
+}

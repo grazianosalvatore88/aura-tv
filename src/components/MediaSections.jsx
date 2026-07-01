@@ -24,7 +24,7 @@ export function MediaRail({ title, items, selectedItem, onSelect, onOpen, emptyT
     <section className="film-rail">
       <div className="section-heading">
         <h2>{title}</h2>
-        <button type="button">Vedi tutti</button>
+        <span className="section-static-label">In elenco</span>
       </div>
 
       {items.length ? (
@@ -53,7 +53,7 @@ export function ContinueRail({ title, items, selectedItem, onSelect, onOpen, emp
     <section className="film-rail">
       <div className="section-heading">
         <h2>{title}</h2>
-        <button type="button">Vedi tutti</button>
+        <span className="section-static-label">In elenco</span>
       </div>
 
       {visibleItems.length ? (

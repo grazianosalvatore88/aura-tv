@@ -93,6 +93,12 @@ export default function StreamVideo({
                 }
               }
             });
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              onStatusChange('HLS pronto');
+              if (!paused) {
+                video.play().catch(() => onStatusChange('Premi play per avviare'));
+              }
+            });
             hlsRef.current = hls;
             return;
           }
@@ -168,7 +174,7 @@ export default function StreamVideo({
       video.removeAttribute('src');
       video.load();
     };
-  }, [activeSrc, fallbackSrc, failedPrimary, muted, onStatusChange, paused, streamType]);
+  }, [activeSrc, fallbackSrc, failedPrimary, onStatusChange, streamType]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -183,7 +189,7 @@ export default function StreamVideo({
 
     if (paused) {
       video.pause();
-    } else if (!dashRef.current) {
+    } else {
       video.play().catch(() => onStatusChange('Premi play per avviare'));
     }
   }, [activeSrc, onStatusChange, paused]);

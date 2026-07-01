@@ -454,7 +454,7 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
                 <div>
                   <h2>Guida TV</h2>
                 </div>
-                <button type="button">Oggi ▾</button>
+                <span className="section-static-label">Oggi</span>
               </div>
 
               <div className="guide-grid">
@@ -465,15 +465,15 @@ export default function LiveTV({ activePage = 'Live TV', onNavigate = () => {} }
                       <strong>{channel.channel}</strong>
                     </div>
                     <div className="guide-programs">
-                      <button type="button" className="active">
+                      <div className="guide-program-card active">
                         <strong>{channel.title}</strong>
                         <span>{channel.time}</span>
-                      </button>
+                      </div>
                       {channel.nextProgram ? (
-                        <button type="button">
+                        <div className="guide-program-card">
                           <strong>{channel.nextProgram}</strong>
                           <span>Next</span>
-                        </button>
+                        </div>
                       ) : null}
                     </div>
                   </div>

@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import MediaDetail from '../components/MediaDetail.jsx';
+import PlayerScreen from '../components/PlayerScreen.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { movieFilters, movies } from '../data/movies.js';
@@ -18,6 +19,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
   const [activeFilter, setActiveFilter] = useState('Tutti');
   const [selectedMovie, setSelectedMovie] = useState(movies[0]);
   const [detailMovie, setDetailMovie] = useState(null);
+  const [showPlayerMovie, setShowPlayerMovie] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuality, setSelectedQuality] = useState(() => Object.fromEntries(
@@ -120,6 +122,19 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  if (showPlayerMovie) {
+    return (
+      <PlayerScreen
+        mode="vod"
+        type="film"
+        item={showPlayerMovie}
+        onBack={() => setShowPlayerMovie(null)}
+        onCycleQuality={() => cycleQuality(showPlayerMovie.id)}
+        onToggleFavorite={() => toggleFavorite(showPlayerMovie.id)}
+      />
+    );
+  }
+
   if (liveDetailMovie) {
     const related = enrichedMovies.filter((movie) => movie.id !== liveDetailMovie.id && (
       movie.genres.some((genre) => liveDetailMovie.genres.includes(genre))
@@ -195,7 +210,7 @@ export default function Movies({ activePage = 'Film', onNavigate = () => {} }) {
               ) : null}
 
               <div className="movie-actions">
-                <button type="button" className="primary">▶ Guarda ora</button>
+                <button type="button" className="primary" onClick={() => setShowPlayerMovie(visibleMovie)}>▶ Guarda ora</button>
                 <button type="button" className="secondary" onClick={() => openDetail(visibleMovie)}>
                   Apri scheda
                 </button>

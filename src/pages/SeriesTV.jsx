@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import TopMenu from '../components/TopMenu.jsx';
 import ProgressBar from '../components/ProgressBar.jsx';
 import MediaDetail from '../components/MediaDetail.jsx';
+import PlayerScreen from '../components/PlayerScreen.jsx';
 import RemoteLegend from '../components/RemoteLegend.jsx';
 import { ContinueRail, MediaRail } from '../components/MediaSections.jsx';
 import { seriesFilters, series } from '../data/series.js';
@@ -18,6 +19,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
   const [activeFilter, setActiveFilter] = useState('Tutte');
   const [selectedSeries, setSelectedSeries] = useState(series[0]);
   const [detailSeries, setDetailSeries] = useState(null);
+  const [showPlayerSeries, setShowPlayerSeries] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set(initialFavoriteIds));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuality, setSelectedQuality] = useState(() => Object.fromEntries(
@@ -120,6 +122,19 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  if (showPlayerSeries) {
+    return (
+      <PlayerScreen
+        mode="vod"
+        type="series"
+        item={showPlayerSeries}
+        onBack={() => setShowPlayerSeries(null)}
+        onCycleQuality={() => cycleQuality(showPlayerSeries.id)}
+        onToggleFavorite={() => toggleFavorite(showPlayerSeries.id)}
+      />
+    );
+  }
+
   if (liveDetailSeries) {
     const related = enrichedSeries.filter((item) => item.id !== liveDetailSeries.id && (
       item.genres.some((genre) => liveDetailSeries.genres.includes(genre))
@@ -196,7 +211,7 @@ export default function SeriesTV({ activePage = 'Serie TV', onNavigate = () => {
               ) : null}
 
               <div className="movie-actions">
-                <button type="button" className="primary">▶ Guarda ora</button>
+                <button type="button" className="primary" onClick={() => setShowPlayerSeries(visibleSeries)}>▶ Guarda ora</button>
                 <button type="button" className="secondary" onClick={() => openDetail(visibleSeries)}>
                   Apri scheda
                 </button>

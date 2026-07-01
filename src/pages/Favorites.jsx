@@ -251,7 +251,7 @@ export default function Favorites({ activePage = 'Preferiti', onNavigate = () =>
           <section className="favorite-section compact-favorite-section">
             <div className="section-heading">
               <h2>Canali preferiti</h2>
-              <button type="button">Vedi tutti</button>
+              <span className="section-static-label">Salvati</span>
             </div>
 
             {filteredChannels.length ? (

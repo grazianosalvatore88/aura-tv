@@ -654,6 +654,49 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
     }));
   }
 
+  function clearWatchHistory() {
+    ['aura-watch-history', 'aura-recent-channels', 'aura-continue-watching'].forEach((key) => localStorage.removeItem(key));
+    setNotice({ status: 'ok', message: 'Cronologia cancellata.' });
+  }
+
+  function clearFavorites() {
+    ['aura-live-favorites', 'aura-movie-favorites', 'aura-series-favorites'].forEach((key) => localStorage.removeItem(key));
+    window.dispatchEvent(new CustomEvent('aura-settings-updated'));
+    setNotice({ status: 'ok', message: 'Preferiti cancellati.' });
+  }
+
+  function exportBackup() {
+    const payload = {
+      version: 'AURA TV v3.2.8',
+      exportedAt: new Date().toISOString(),
+      settings,
+      favorites: {
+        live: localStorage.getItem('aura-live-favorites'),
+        movie: localStorage.getItem('aura-movie-favorites'),
+        series: localStorage.getItem('aura-series-favorites')
+      },
+      epg: localStorage.getItem('aura-epg-report'),
+      diagnostics: localStorage.getItem('aura-core-diagnostics')
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `aura-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setNotice({ status: 'ok', message: 'Backup esportato.' });
+  }
+
+  function clearCache() {
+    ['aura-epg-cache', 'aura-epg-report', 'aura-core-diagnostics'].forEach((key) => localStorage.removeItem(key));
+    window.dispatchEvent(new CustomEvent('aura-settings-updated'));
+    setNotice({ status: 'ok', message: 'Cache AURA svuotata.' });
+  }
+
   function resetApp() {
     localStorage.removeItem('aura-tv-settings');
     setSettings(defaultSettings);
@@ -751,12 +794,6 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                         type="password"
                         placeholder="Inserisci password"
                         onChange={(value) => updateSourceField('xtream', 'password', value)}
-                      />
-                      <ChoiceRow
-                        title="Compatibilità"
-                        choices={['Auto', 'Standard', 'Alta', 'Diretta', 'Web']}
-                        active={settings.xtream.clientMode || 'Auto'}
-                        onChange={(value) => updateSourceField('xtream', 'clientMode', value)}
                       />
                       <Field
                         label="Stato connessione"
@@ -915,11 +952,6 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                       </p>
                     )}
                   </div>
-
-                  <div className="aura-core-mode-note">
-                    <strong>AURA Core attivo</strong>
-                    <span>Qualità duplicate, loghi, nomi puliti, metadata e riconoscimento canali sono gestiti automaticamente dal motore principale.</span>
-                  </div>
                 </SettingCard>
               </>
             ) : null}
@@ -973,9 +1005,9 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                   <small>Accesso completo a tutte le funzioni durante il periodo di prova.</small>
                 </div>
 
-                <div className="settings-actions">
-                  <button type="button" className="primary" onClick={() => setNotice({ status: 'ok', message: 'Lo sblocco Premium sarà collegato allo store nella fase finale.' })}>Sblocca AURA Premium</button>
-                  <button type="button" className="secondary" onClick={() => setNotice({ status: 'ok', message: 'Ripristino acquisto pronto per il collegamento allo store.' })}>Ripristina acquisto</button>
+                <div className="aura-core-mode-note">
+                  <strong>Premium non ancora attivo</strong>
+                  <span>Lo sblocco definitivo sarà collegato allo store nella fase finale. Nessun tasto fittizio viene mostrato.</span>
                 </div>
               </SettingCard>
             ) : null}
@@ -1008,8 +1040,8 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                 </div>
 
                 <div className="settings-actions danger">
-                  <button type="button" className="secondary" onClick={() => setNotice({ status: 'ok', message: 'Cronologia cancellata.' })}>Cancella cronologia</button>
-                  <button type="button" className="secondary" onClick={() => setNotice({ status: 'ok', message: 'Preferiti cancellati.' })}>Cancella preferiti</button>
+                  <button type="button" className="secondary" onClick={clearWatchHistory}>Cancella cronologia</button>
+                  <button type="button" className="secondary" onClick={clearFavorites}>Cancella preferiti</button>
                 </div>
               </SettingCard>
             ) : null}
@@ -1021,15 +1053,15 @@ export default function Settings({ activePage = 'Impostazioni', onNavigate = () 
                 description="Gestione dati, cache e informazioni dispositivo."
               >
                 <div className="device-info-grid">
-                  <span><strong>Versione</strong>AURA TV v3.2.0 Core</span>
+                  <span><strong>Versione</strong>AURA TV v3.2.8</span>
                   <span><strong>Dispositivo</strong>Locale</span>
                   <span><strong>Stato lista</strong>{settings.connectionStatus}</span>
                   <span><strong>Ultimo aggiornamento</strong>{settings.lastUpdate}</span>
                 </div>
 
                 <div className="settings-actions danger">
-                  <button type="button" className="secondary" onClick={() => setNotice({ status: 'ok', message: 'Backup esportato in modalità demo.' })}>Esporta backup</button>
-                  <button type="button" className="secondary" onClick={() => setNotice({ status: 'ok', message: 'Cache svuotata.' })}>Svuota cache</button>
+                  <button type="button" className="secondary" onClick={exportBackup}>Esporta backup</button>
+                  <button type="button" className="secondary" onClick={clearCache}>Svuota cache</button>
                   <button type="button" className="secondary" onClick={resetApp}>Reset app</button>
                 </div>
               </SettingCard>

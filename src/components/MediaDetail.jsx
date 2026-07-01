@@ -4,14 +4,6 @@ import TopMenu from './TopMenu.jsx';
 import ProgressBar from './ProgressBar.jsx';
 import PlayerScreen from './PlayerScreen.jsx';
 
-const sampleEpisodes = [
-  { episode: 'E01', title: 'Quando sei perso nell’oscurità', time: '52 min', progress: 100 },
-  { episode: 'E02', title: 'Infetti', time: '55 min', progress: 100 },
-  { episode: 'E03', title: 'Molto, molto tempo', time: '1h 15min', progress: 100 },
-  { episode: 'E04', title: 'Per favore, stringimi la mano', time: '46 min', progress: 46 },
-  { episode: 'E05', title: 'Resistere e sopravvivere', time: '59 min', progress: 0 }
-];
-
 function BackIcon() {
   return (
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -26,6 +18,27 @@ function StarIcon() {
       <path d="m12 2.8 2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.36l-5.7 3 1.09-6.35-4.62-4.5 6.38-.93L12 2.8Z" />
     </svg>
   );
+}
+
+
+function parseSeasonCount(value) {
+  const match = String(value || '').match(/\d+/);
+  const count = match ? Number(match[0]) : 1;
+  return Math.max(1, Math.min(20, count || 1));
+}
+
+function buildSeasonEpisodes(item, seasonNumber) {
+  const totalEpisodes = Math.max(4, Math.min(12, Number(String(item.episodes || '').match(/\d+/)?.[0] || 6)));
+
+  return Array.from({ length: Math.min(totalEpisodes, 8) }, (_, index) => {
+    const ep = index + 1;
+    return {
+      episode: `S${String(seasonNumber).padStart(2, '0')}E${String(ep).padStart(2, '0')}`,
+      title: ep === 1 ? `${item.title} · Inizio stagione` : `${item.title} · Episodio ${ep}`,
+      time: item.episodeDuration || '45 min',
+      progress: seasonNumber === 1 && ep <= 2 ? 100 : seasonNumber === 1 && ep === 3 ? item.progress || 0 : 0
+    };
+  });
 }
 
 function DetailMeta({ item, type }) {
@@ -66,6 +79,10 @@ export default function MediaDetail({
 }) {
   const isSeries = type === 'series';
   const [showPlayer, setShowPlayer] = useState(false);
+  const [activeSeason, setActiveSeason] = useState(1);
+  const seasonCount = isSeries ? parseSeasonCount(item.seasons) : 1;
+  const seasons = Array.from({ length: seasonCount }, (_, index) => index + 1);
+  const visibleEpisodes = isSeries ? buildSeasonEpisodes(item, activeSeason) : [];
 
   if (showPlayer) {
     return (
@@ -126,7 +143,6 @@ export default function MediaDetail({
 
               <div className="detail-actions">
                 <button type="button" className="primary" onClick={() => setShowPlayer(true)}>▶ Guarda ora</button>
-                <button type="button" className="secondary">Trailer</button>
                 <button
                   type="button"
                   className={item.favorite ? 'round-action favorite-active' : 'round-action'}
@@ -157,14 +173,26 @@ export default function MediaDetail({
           {isSeries ? (
             <article className="detail-info-card glass-panel">
               <span className="eyebrow">Stagioni</span>
-              <div className="season-selector">
-                <button type="button" className="active">Stagione 1</button>
-                <button type="button">Stagione 2</button>
-                <button type="button">Tutte</button>
+              <div className="season-selector season-selector-functional">
+                {seasons.map((season) => (
+                  <button
+                    key={season}
+                    type="button"
+                    className={activeSeason === season ? 'active' : ''}
+                    onClick={() => setActiveSeason(season)}
+                  >
+                    S{String(season).padStart(2, '0')}
+                  </button>
+                ))}
               </div>
               <div className="episode-list">
-                {sampleEpisodes.map((episode) => (
-                  <button type="button" key={episode.episode} className={episode.progress ? 'episode-row active' : 'episode-row'}>
+                {visibleEpisodes.map((episode) => (
+                  <button
+                    type="button"
+                    key={episode.episode}
+                    className={episode.progress ? 'episode-row active' : 'episode-row'}
+                    onClick={() => setShowPlayer(true)}
+                  >
                     <span>{episode.episode}</span>
                     <div>
                       <strong>{episode.title}</strong>
@@ -183,7 +211,7 @@ export default function MediaDetail({
                   <span key={person}>{person}</span>
                 ))}
               </div>
-              <p className="detail-card-copy">Quando collegheremo il motore metadata, qui potremo mostrare anche regista, attori completi, trailer e contenuti simili reali.</p>
+              <p className="detail-card-copy">Quando collegheremo il motore metadata, qui potremo mostrare anche regista, attori completi e contenuti simili reali.</p>
             </article>
           )}
         </section>
@@ -192,7 +220,7 @@ export default function MediaDetail({
           <section className="detail-related">
             <div className="section-heading">
               <h2>{isSeries ? 'Serie simili' : 'Film simili'}</h2>
-              <button type="button">Vedi tutti</button>
+              <span className="section-static-label">Suggeriti da AURA</span>
             </div>
             <div className="film-rail-track">
               {relatedItems.slice(0, 8).map((related) => (

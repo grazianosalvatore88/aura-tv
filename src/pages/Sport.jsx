@@ -241,8 +241,7 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
                 <ProgressBar value={visibleEvent.progress} />
               </div>
               <div className="sport-actions">
-                <button type="button" className="primary">▶ Guarda evento</button>
-                <button type="button" className="secondary">Info</button>
+                <span className="section-static-label">Evento informativo</span>
                 <button
                   type="button"
                   className={visibleEvent.favorite ? 'round-action favorite-active' : 'round-action'}
@@ -258,7 +257,7 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
         <section className="sport-section">
           <div className="section-heading">
             <h2>{activeFilter === 'Tutto' ? 'Eventi in evidenza' : `Eventi ${activeFilter}`}</h2>
-            <button type="button">Vedi tutti</button>
+            <span className="section-static-label">In elenco</span>
           </div>
 
           {filteredEvents.length ? (
@@ -281,7 +280,7 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
         <section className="sport-section">
           <div className="section-heading">
             <h2>Live ora</h2>
-            <button type="button">Vedi tutti</button>
+            <span className="section-static-label">In elenco</span>
           </div>
 
           <div className="sport-live-now-grid">
@@ -299,7 +298,7 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
         <section className="sport-section">
           <div className="section-heading">
             <h2>Canali sportivi</h2>
-            <button type="button">Aggiorna</button>
+            <span className="section-static-label">Da AURA Core</span>
           </div>
 
           {filteredChannels.length ? (
@@ -325,8 +324,8 @@ export default function Sport({ activePage = 'Sport', onNavigate = () => {} }) {
             { key: 'BACK', label: 'Indietro' },
             { key: 'rosso', color: 'red', label: 'Preferito' },
             { key: 'verde', color: 'green', label: 'Filtra sport' },
-            { key: 'giallo', color: 'yellow', label: 'Vedi tutti' },
-            { key: 'blu', color: 'blue', label: 'Info' }
+            { key: 'giallo', color: 'yellow', label: 'Filtri' },
+            { key: 'blu', color: 'blue', label: 'Dettagli' }
           ]}
         />
       </main>
